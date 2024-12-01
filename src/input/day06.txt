@@ -1,0 +1,2 @@
+The input data is not synced as "Advent of Code is free to use, not free to copy". 
+See more at: https://adventofcode.com/2024/about#faq_copying
