@@ -43,7 +43,7 @@ fn solve(input: &str) -> i32 {
     println!("{:?}", lists);
     println!("{:?}", list);
     println!("{total}");
-    // 2 + 1 + 0 + 1 + 2 + 5 = 11
+    // 9 + 4 + 0 + 0 + 9 + 9 = 31
     */
 
     total
@@ -62,6 +62,6 @@ mod tests {
 3   9
 3   3";
         let output = solve(input);
-        assert_eq!(output, 11)
+        assert_eq!(output, 31)
     }
 }
