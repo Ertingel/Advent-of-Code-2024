@@ -18,9 +18,35 @@ fn solve(input: &str) -> i32 {
         })
         .collect();
 
-    println!("{:?}", lists);
+    // Checking safe reports.
+    let min_delta: i32 = 1;
+    let max_delta: i32 = 3;
+    let list: Vec<bool> = lists
+        .iter()
+        .map(|report| {
+            let increasing = report
+                .windows(2)
+                .map(|window| window[1] - window[0])
+                .all(|delta| min_delta <= delta && delta <= max_delta);
 
-    0
+            let decreasing = report
+                .windows(2)
+                .map(|window| window[0] - window[1])
+                .all(|delta| min_delta <= delta && delta <= max_delta);
+
+            increasing || decreasing
+        })
+        .collect();
+
+    // Getting total.
+    let total: i32 = list.iter().filter(|safe| **safe).count() as i32;
+
+    println!("{:?}", lists);
+    println!("{:?}", list);
+    println!("{total}");
+    // Safe Unsafe Unsafe Unsafe Unsafe Safe = 2
+
+    total
 }
 
 #[cfg(test)]
