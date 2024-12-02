@@ -1,5 +1,4 @@
 extern crate advent_of_code;
-use advent_of_code::reader;
 
 fn main() {
     let input = include_str!("../././input/day01.txt");
@@ -7,10 +6,46 @@ fn main() {
     print!("day01 part1: {output}");
 }
 
-fn solve(input: &str) -> String {
-    let r = Reader::new(input);
-    todo!();
-    return "".to_string();
+fn solve(input: &str) -> i32 {
+    // Parsing input.
+    let lists: Vec<Vec<i32>> = input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .map(|entry| entry.parse::<i32>().unwrap())
+                .collect()
+        })
+        .collect();
+
+    // Transposing lists.
+    let cols = lists[0].len();
+    let lists: Vec<Vec<i32>> = (0..cols)
+        .map(|col| lists.iter().map(|row| row[col]).collect())
+        .collect();
+
+    // Sorting lists.
+    let mut lists = lists;
+    lists.iter_mut().for_each(|list| list.sort());
+
+    // Transposing lists.
+    let cols = lists[0].len();
+    let lists: Vec<Vec<i32>> = (0..cols)
+        .map(|col| lists.iter().map(|row| row[col]).collect())
+        .collect();
+
+    // Geting deltas.
+    let list: Vec<i32> = lists.iter().map(|row| (row[0] - row[1]).abs()).collect();
+
+    // Getting total.
+    let total: i32 = list.iter().sum();
+
+    /*
+    println!("{:?}", lists);
+    println!("{:?}", list);
+    println!("{total}");
+    */
+
+    total
 }
 
 #[cfg(test)]
@@ -26,6 +61,6 @@ mod tests {
 3   9
 3   3";
         let output = solve(input);
-        assert_eq!(output, "".to_string())
+        assert_eq!(output, 11)
     }
 }

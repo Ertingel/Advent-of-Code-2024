@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-struct Reader {
+pub struct Reader {
     source: Rc<Vec<char>>,
     head: usize,
 }
@@ -28,5 +28,12 @@ impl Reader {
     pub fn get_char(&self, relative_index: Option<usize>) -> Option<&char> {
         let index = self.head + relative_index.unwrap_or(0);
         self.source.get(index)
+    }
+
+    pub fn take(&mut self, count: Option<usize>) -> &[char] {
+        let count = count.unwrap_or(1);
+        let slice = &self.source[self.head..self.head + count];
+        self.head += count;
+        slice
     }
 }
