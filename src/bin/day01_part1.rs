@@ -1,12 +1,10 @@
 // cargo run  --bin day01_part1
 // cargo test --bin day01_part1
 
-extern crate advent_of_code;
-
 fn main() {
     let input = include_str!("../././input/day01.txt");
     let output = solve(input);
-    println!("day01 part1: {output}");
+    println!("Day01 part2: {output}");
 }
 
 fn solve(input: &str) -> i32 {

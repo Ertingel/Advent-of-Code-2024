@@ -1,12 +1,10 @@
 // cargo run  --bin day01_part2
 // cargo test --bin day01_part2
 
-extern crate advent_of_code;
-
 fn main() {
     let input = include_str!("../././input/day01.txt");
     let output = solve(input);
-    println!("day01 part1: {output}");
+    println!("Day01 part1: {output}");
 }
 
 fn solve(input: &str) -> i32 {
@@ -53,7 +51,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day01_part1() {
+    fn day01_part2() {
         let input = "3   4
 4   3
 2   5
