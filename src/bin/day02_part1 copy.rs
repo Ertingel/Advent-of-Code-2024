@@ -1,10 +1,10 @@
-// cargo run  --bin day02_part1
-// cargo test --bin day02_part1
+// cargo run  --bin day02_part2
+// cargo test --bin day02_part2
 
 fn main() {
     let input = include_str!("../././input/day02.txt");
     let output = solve(input);
-    println!("Day02 part1: {output}");
+    println!("Day02 part2: {output}");
 }
 
 fn solve(input: &str) -> i32 {
@@ -45,7 +45,7 @@ fn solve(input: &str) -> i32 {
     println!("{:?}", lists);
     println!("{:?}", list);
     println!("{total}");
-    // Safe Unsafe Unsafe Unsafe Unsafe Safe = 2
+    // Safe Unsafe Unsafe Safe Safe Safe = 2
      */
 
     total
@@ -56,7 +56,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day02_part1() {
+    fn day02_part2() {
         let input = "7 6 4 2 1
 1 2 7 8 9
 9 7 6 2 1
