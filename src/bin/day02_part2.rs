@@ -7,6 +7,14 @@ fn main() {
     println!("Day02 part2: {output}");
 }
 
+fn copy_exclude(list: &[i32], index: i32) -> Vec<i32> {
+    let mut clone = list.to_vec();
+    if index >= 0 {
+        clone.remove(index as usize);
+    }
+    clone
+}
+
 fn solve(input: &str) -> i32 {
     // Parsing input.
     let lists: Vec<Vec<i32>> = input
@@ -24,17 +32,21 @@ fn solve(input: &str) -> i32 {
     let list: Vec<bool> = lists
         .iter()
         .map(|report| {
-            let increasing = report
-                .windows(2)
-                .map(|window| window[1] - window[0])
-                .all(|delta| min_delta <= delta && delta <= max_delta);
+            (-1..(report.len() as i32))
+                .map(|index| copy_exclude(report, index))
+                .any(|report| {
+                    let increasing = report
+                        .windows(2)
+                        .map(|window| window[1] - window[0])
+                        .all(|delta| min_delta <= delta && delta <= max_delta);
 
-            let decreasing = report
-                .windows(2)
-                .map(|window| window[0] - window[1])
-                .all(|delta| min_delta <= delta && delta <= max_delta);
+                    let decreasing = report
+                        .windows(2)
+                        .map(|window| window[0] - window[1])
+                        .all(|delta| min_delta <= delta && delta <= max_delta);
 
-            increasing || decreasing
+                    increasing || decreasing
+                })
         })
         .collect();
 
@@ -64,6 +76,6 @@ mod tests {
 8 6 4 4 1
 1 3 6 7 9";
         let output = solve(input);
-        assert_eq!(output, 2)
+        assert_eq!(output, 4)
     }
 }
