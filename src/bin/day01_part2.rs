@@ -1,3 +1,6 @@
+// cargo run  --bin day01_part2
+// cargo test --bin day01_part2
+
 extern crate advent_of_code;
 
 fn main() {
@@ -23,18 +26,14 @@ fn solve(input: &str) -> i32 {
         .map(|col| lists.iter().map(|row| row[col]).collect())
         .collect();
 
-    // Sorting lists.
-    let mut lists = lists;
-    lists.iter_mut().for_each(|list| list.sort());
-
-    // Transposing lists.
-    let cols = lists[0].len();
-    let lists: Vec<Vec<i32>> = (0..cols)
-        .map(|col| lists.iter().map(|row| row[col]).collect())
+    // Geting similarity scores.
+    let list: Vec<i32> = lists[0]
+        .iter()
+        .map(|num| {
+            let count = lists[1].iter().filter(|x| *x == num).count() as i32;
+            num * count
+        })
         .collect();
-
-    // Geting deltas.
-    let list: Vec<i32> = lists.iter().map(|row| (row[0] - row[1]).abs()).collect();
 
     // Getting total.
     let total: i32 = list.iter().sum();
@@ -44,7 +43,7 @@ fn solve(input: &str) -> i32 {
     println!("{:?}", list);
     println!("{total}");
     // 9 + 4 + 0 + 0 + 9 + 9 = 31
-    */
+     */
 
     total
 }

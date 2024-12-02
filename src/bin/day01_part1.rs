@@ -1,3 +1,6 @@
+// cargo run  --bin day01_part1
+// cargo test --bin day01_part1
+
 extern crate advent_of_code;
 
 fn main() {
