@@ -8,6 +8,10 @@ fn main() {
 }
 
 fn solve(input: &str) -> i32 {
+    let indices = input.match_indices("mul(");
+
+    //let iter = input.chars().peekable();
+
     /*
     println!("{total}");
     // 2*4 + 5*5 + 11*8 + 8*5 = 161
