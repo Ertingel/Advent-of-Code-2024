@@ -1,23 +1,41 @@
 // cargo run  --bin day03_part1
 // cargo test --bin day03_part1
 
+use advent_of_code::parsing;
+
 fn main() {
     let input = include_str!("../././input/day03.txt");
     let output = solve(input);
     println!("Day03 part1: {output}");
 }
 
+fn mul<'a>() -> impl Fn(&'a str) -> Option<(&'a str, i32)> {
+    |input: &str| {
+        let remaining = input;
+        let (remaining, _) = parsing::string("mul(")(remaining)?;
+
+        let (remaining, a) = parsing::continuous(1, 3, parsing::numeric())(remaining)?;
+        let a = a.parse::<i32>().ok()?;
+
+        let (remaining, _) = parsing::char(',')(remaining)?;
+
+        let (remaining, b) = parsing::continuous(1, 3, parsing::numeric())(remaining)?;
+        let b = b.parse::<i32>().ok()?;
+
+        let (remaining, _) = parsing::char(')')(remaining)?;
+
+        Some((remaining, a * b))
+    }
+}
+
 fn solve(input: &str) -> i32 {
-    let indices = input.match_indices("mul(");
+    let mults = parsing::find_all(mul())(input);
+    let total: i32 = mults.iter().sum();
 
-    //let iter = input.chars().peekable();
-
-    /*
     println!("{total}");
     // 2*4 + 5*5 + 11*8 + 8*5 = 161
-     */
 
-    0
+    total
 }
 
 #[cfg(test)]
