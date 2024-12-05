@@ -7,23 +7,21 @@ fn main() {
     println!("Day04 part2: {output}");
 }
 
-fn find(table: &Vec<Vec<char>>, point: &(i32, i32)) -> i32 {
+fn find(table: &Vec<Vec<char>>, point: &(i32, i32)) -> bool {
     let directions = [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        //(0, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
+        ((-1, -1), (-1, 1)),
+        ((-1, 1), (1, 1)),
+        ((1, 1), (1, -1)),
+        ((1, -1), (-1, -1)),
     ];
 
-    directions
-        .iter()
-        .filter(|direction| walk(table, "XMAS", point, direction).is_some())
-        .count() as i32
+    directions.iter().any(|(direction1, direction2)| {
+        let point1 = &(point.0 - direction1.0, point.1 - direction1.1);
+        let point2 = &(point.0 - direction2.0, point.1 - direction2.1);
+
+        walk(table, "MAS", point1, direction1).is_some()
+            && walk(table, "MAS", point2, direction2).is_some()
+    })
 }
 
 fn walk(
@@ -60,12 +58,12 @@ fn solve(input: &str) -> i32 {
     let width = table[0].len() as i32;
     let height = table.len() as i32;
 
-    let matches: Vec<i32> = (0..width)
+    let matches: Vec<(i32, i32)> = (0..width)
         .flat_map(|y2| (0..height).map(|x2| (x2, y2)).collect::<Vec<(i32, i32)>>())
-        .map(|point| find(&table, &point))
+        .filter(|point| find(&table, point))
         .collect();
 
-    let total: i32 = matches.iter().sum();
+    let total: i32 = matches.len() as i32;
 
     //println!("{:?}", matches);
     //println!("{total}");
