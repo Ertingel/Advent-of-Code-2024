@@ -70,10 +70,12 @@ fn solve(input: &str) -> i32 {
 
     let total: i32 = mults.iter().map(|x| x.iter().sum::<i32>()).sum();
 
+    /*
     println!("{:?}", doos);
     println!("{:?}", mults);
     println!("{total}");
     // 2*4 + 8*5 = 48
+    */
 
     total
 }
