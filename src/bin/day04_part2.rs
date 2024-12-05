@@ -1,10 +1,10 @@
-// cargo run  --bin day04_part1
-// cargo test --bin day04_part1
+// cargo run  --bin day04_part2
+// cargo test --bin day04_part2
 
 fn main() {
     let input = include_str!("../././input/day04.txt");
     let output = solve(input);
-    println!("Day04 part1: {output}");
+    println!("Day04 part2: {output}");
 }
 
 fn find(table: &Vec<Vec<char>>, point: &(i32, i32)) -> i32 {
@@ -70,16 +70,16 @@ fn solve(input: &str) -> i32 {
     //println!("{:?}", matches);
     //println!("{total}");
     /*
-    ....XXMAS.
-    .SAMXMS...
-    ...S..A...
-    ..A.A.MS.X
-    XMASAMX.MM
-    X.....XA.A
-    S.S.S.S.SS
-    .A.A.A.A.A
-    ..M.M.M.MM
-    .X.X.XMASX
+    .M.S......
+    ..A..MSMS.
+    .M.S.MAA..
+    ..A.ASMSM.
+    .M.S.M....
+    ..........
+    S.S.S.S.S.
+    .A.A.A.A..
+    M.M.M.M.M.
+    ..........
     */
 
     total
@@ -90,7 +90,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day04_part1() {
+    fn day04_part2() {
         let input = "MMMSXXMASM
 MSAMXMSMSA
 AMXSXMAAMM
@@ -102,22 +102,22 @@ SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX";
         let output = solve(input);
-        assert_eq!(output, 18)
+        assert_eq!(output, 9)
     }
 
     #[test]
-    fn day04_part1_extra() {
-        let input = "....XXMAS.
-.SAMXMS...
-...S..A...
-..A.A.MS.X
-XMASAMX.MM
-X.....XA.A
-S.S.S.S.SS
-.A.A.A.A.A
-..M.M.M.MM
-.X.X.XMASX";
+    fn day04_part2_extra() {
+        let input = ".M.S......
+..A..MSMS.
+.M.S.MAA..
+..A.ASMSM.
+.M.S.M....
+..........
+S.S.S.S.S.
+.A.A.A.A..
+M.M.M.M.M.
+..........";
         let output = solve(input);
-        assert_eq!(output, 18)
+        assert_eq!(output, 9)
     }
 }
