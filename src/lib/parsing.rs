@@ -194,6 +194,24 @@ pub fn string<'a>(pattern: &'a str) -> impl Fn(&'a str) -> Option<(&'a str, &'a 
     }
 }
 
+pub fn not_string<'a>(pattern: &'a str) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
+    move |input: &str| {
+        let len = pattern.len();
+
+        if len > input.len() {
+            return None;
+        }
+
+        let taken = &input[..len];
+        let remaining = &input[len..];
+
+        if pattern != taken {
+            return Some((remaining, taken));
+        }
+        None
+    }
+}
+
 pub fn whitespace() -> impl Fn(&str) -> Option<(&str, &str)> {
     any!(char(' '), string(" "), newline())
 }
@@ -288,6 +306,32 @@ where
         let (remaining, num) = con(input)?;
         let num = num.parse::<T>().ok()?;
         Some((remaining, num))
+    }
+}
+
+pub fn take_untill<'a, T>(
+    pattern: impl Fn(&'a str) -> Option<(&'a str, T)>,
+) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
+    move |input: &str| {
+        let mut remaining = input;
+
+        while !remaining.is_empty() {
+            let res = pattern(remaining);
+            if res.is_some() {
+                let byte_count = input.len() - remaining.len();
+                let taken = &input[..byte_count];
+                return Some((remaining, taken));
+            }
+
+            let res = take(1)(remaining);
+            if let Some(res) = res {
+                remaining = res.0;
+            } else {
+                return Some(("", input));
+            }
+        }
+
+        Some(("", input))
     }
 }
 
@@ -445,6 +489,18 @@ mod tests {
         assert_eq!(number::<i32>()("ABC"), None);
         assert_eq!(number::<i32>()("123"), Some(("", 123)));
         assert_eq!(number::<i32>()("123abc"), Some(("abc", 123)));
+    }
+
+    #[test]
+    fn take_untill_tests() {
+        assert_eq!(
+            take_untill(numeric())("abc1de23fg"),
+            Some(("1de23fg", "abc"))
+        );
+        assert_eq!(take_untill(numeric())("1de23fg"), Some(("1de23fg", "")));
+        assert_eq!(take_untill(numeric())("de23fg"), Some(("23fg", "de")));
+        assert_eq!(take_untill(numeric())("fg"), Some(("", "fg")));
+        assert_eq!(take_untill(numeric())("1"), Some(("1", "")));
     }
 
     #[test]
