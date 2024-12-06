@@ -4,7 +4,7 @@
 fn main() {
     let input = include_str!("../././input/day01.txt");
     let output = solve(input);
-    println!("Day01 part2: {output}");
+    println!("Day01 part1: {output}");
 }
 
 fn solve(input: &str) -> i32 {
