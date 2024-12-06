@@ -91,6 +91,8 @@ fn fix_invalid(rules: &HashMap<i32, HashSet<i32>>, input: &Vec<i32>) -> Vec<i32>
                 let prerequisite: &i32 = err.iter().next().unwrap();
                 update.retain(|x| x != prerequisite);
                 update.insert(index as usize, *prerequisite);
+
+                index += 1;
             } else {
                 index -= 1;
             }
