@@ -69,31 +69,85 @@ fn validate_update(rules: &HashMap<i32, HashSet<i32>>, update: &Vec<i32>) -> boo
     true
 }
 
+fn fix_invalid(rules: &HashMap<i32, HashSet<i32>>, input: &Vec<i32>) -> Vec<i32> {
+    let mut update = input.clone();
+    let all_pages: HashSet<i32> = HashSet::from_iter(update.clone());
+
+    let mut index = (update.len() - 2) as i32;
+
+    while index >= 0 {
+        let page = update[index as usize];
+        let prerequisites = rules.get(&page);
+
+        let printed: HashSet<i32> = update.iter().take(index as usize).cloned().collect();
+
+        if let Some(prerequisites) = prerequisites {
+            let prerequisites: HashSet<i32> =
+                prerequisites.intersection(&all_pages).cloned().collect();
+
+            let err: HashSet<i32> = prerequisites.difference(&printed).cloned().collect();
+
+            if !err.is_empty() {
+                let prerequisite: &i32 = err.iter().next().unwrap();
+                update.retain(|x| x != prerequisite);
+                update.insert(index as usize, *prerequisite);
+            } else {
+                index -= 1;
+            }
+        } else {
+            index -= 1;
+        }
+    }
+
+    assert!(
+        validate_update(rules, &update),
+        "{:?} is not a valid update. Original {:?}",
+        update,
+        input
+    );
+
+    assert_eq!(
+        update.len(),
+        input.len(),
+        "{:?} changed size. Original {:?}",
+        update,
+        input
+    );
+
+    update
+}
+
 fn solve(input: &str) -> i32 {
     let data: Vec<&str> = input.split("\n\n").collect();
 
     let rules = parse_rules(data[0]);
     let updates = parse_updates(data[1]);
 
-    let valid: Vec<&Vec<i32>> = updates
+    let invalid: Vec<&Vec<i32>> = updates
         .iter()
-        .filter(|update| validate_update(&rules, update))
+        .filter(|update| !validate_update(&rules, update))
         .collect();
 
-    let center: Vec<i32> = valid
+    let fixed: Vec<Vec<i32>> = invalid
+        .iter()
+        .map(|update| fix_invalid(&rules, update))
+        .collect();
+
+    let center: Vec<i32> = fixed
         .iter()
         .map(|update| update[update.len() / 2])
         .collect();
 
     // Getting total.
     let total: i32 = center.iter().sum();
-
     /*
-    println!("{:?}", rules);
-    println!("{:?}", updates);
-    println!("{:?}", valid);
-    println!("{:?}", center);
+    println!("rules   {:?}", rules);
+    println!("updates {:?}", updates);
+    println!("invalid {:?}", invalid);
+    println!("fixed   {:?}", fixed);
+    println!("center  {:?}", center);
     println!("{total}");
+    */
     /*
     75,47,61,53,29 -> Valid   -> 61
     97,61,53,29,13 -> Valid   -> 53
@@ -108,7 +162,6 @@ fn solve(input: &str) -> i32 {
     97,13,75,29,47 becomes 97,75,47,29,13.
 
     (47 + 29 + 13) = 123
-    */
     */
 
     total
