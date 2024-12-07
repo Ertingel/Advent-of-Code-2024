@@ -7,17 +7,18 @@ fn main() {
     println!("Day07 part1: {output}");
 }
 
-fn parse_input(input: &str) -> Vec<(i32, Vec<i32>)> {
+fn parse_input(input: &str) -> Vec<(i64, Vec<i64>)> {
     input
         .lines()
         .map(|line| {
             let mut res = line.split(": ");
-            let result: i32 = res.next().unwrap().parse().unwrap();
-            let numbers: Vec<i32> = res
+            let result: i64 = res.next().unwrap().parse().unwrap();
+
+            let numbers: Vec<i64> = res
                 .next()
                 .unwrap()
                 .split(' ')
-                .map(|n| n.parse::<i32>().unwrap())
+                .map(|n| n.parse::<i64>().unwrap())
                 .collect();
 
             (result, numbers)
@@ -32,7 +33,7 @@ enum Operator {
 }
 
 impl Operator {
-    fn operate(&self, a: i32, b: i32) -> i32 {
+    fn operate(&self, a: i64, b: i64) -> i64 {
         match self {
             Operator::Addition => a + b,
             Operator::Multiplication => a * b,
@@ -45,9 +46,9 @@ impl Operator {
 }
 
 fn find_solution(
-    result: &i32,
-    numbers: Vec<i32>,
-    acc: &i32,
+    result: &i64,
+    numbers: Vec<i64>,
+    acc: &i64,
     stack: Vec<Operator>,
 ) -> Option<Vec<Operator>> {
     if numbers.is_empty() {
@@ -73,7 +74,7 @@ fn find_solution(
     None
 }
 
-fn solve_equations(equations: &[(i32, Vec<i32>)]) -> Vec<(i32, Vec<i32>, Option<Vec<Operator>>)> {
+fn solve_equations(equations: &[(i64, Vec<i64>)]) -> Vec<(i64, Vec<i64>, Option<Vec<Operator>>)> {
     equations
         .iter()
         .map(|(result, numbers)| {
@@ -86,12 +87,12 @@ fn solve_equations(equations: &[(i32, Vec<i32>)]) -> Vec<(i32, Vec<i32>, Option<
         .collect()
 }
 
-fn solve(input: &str) -> i32 {
-    let equations: Vec<(i32, Vec<i32>)> = parse_input(input);
+fn solve(input: &str) -> i64 {
+    let equations: Vec<(i64, Vec<i64>)> = parse_input(input);
 
     let solved = solve_equations(&equations);
 
-    let valid: Vec<(i32, Vec<i32>, Vec<Operator>)> = solved
+    let valid: Vec<(i64, Vec<i64>, Vec<Operator>)> = solved
         .clone()
         .into_iter()
         .filter_map(|(result, numbers, solution)| {
@@ -102,7 +103,7 @@ fn solve(input: &str) -> i32 {
         })
         .collect();
 
-    let total: i32 = valid.clone().into_iter().map(|(result, _, _)| result).sum();
+    let total: i64 = valid.clone().into_iter().map(|(result, _, _)| result).sum();
 
     /*
     println!("{:?}", equations);
