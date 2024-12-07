@@ -36,13 +36,14 @@ fn parse_map(input: &str) -> ((usize, usize), HashSet<Point>, Point) {
     ((width, height), obstructions, guard_position)
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Heading {
     Upp,
     Right,
     Down,
     Left,
     Oustide,
+    Looping,
 }
 
 impl Heading {
@@ -53,6 +54,7 @@ impl Heading {
             Heading::Down => 0,
             Heading::Left => -1,
             Heading::Oustide => 0,
+            Heading::Looping => 0,
         }
     }
 
@@ -63,6 +65,7 @@ impl Heading {
             Heading::Down => 1,
             Heading::Left => 0,
             Heading::Oustide => 0,
+            Heading::Looping => 0,
         }
     }
 
@@ -73,7 +76,12 @@ impl Heading {
             Heading::Down => Heading::Left,
             Heading::Left => Heading::Upp,
             Heading::Oustide => Heading::Oustide,
+            Heading::Looping => Heading::Looping,
         }
+    }
+
+    pub fn forward(&self, point: &Point) -> Point {
+        (point.0 + self.x(), point.1 + self.y())
     }
 }
 
@@ -83,11 +91,7 @@ fn step(
     guard_position: Point,
     guard_heading: Heading,
 ) -> (Point, Heading) {
-    let (guard_position_x, guard_position_y) = guard_position;
-    let next_pos = (
-        guard_position_x + guard_heading.x(),
-        guard_position_y + guard_heading.y(),
-    );
+    let next_pos = guard_heading.forward(&guard_position);
 
     // Check if otside of bounds.
     if 0 > next_pos.0
@@ -100,12 +104,7 @@ fn step(
 
     // Check if colliding.
     if obstructions.contains(&next_pos) {
-        return step(
-            dimensions,
-            obstructions,
-            guard_position,
-            guard_heading.rotate_clockwise(),
-        );
+        return (guard_position, guard_heading.rotate_clockwise());
     }
 
     (next_pos, guard_heading)
@@ -116,21 +115,68 @@ fn walk(
     obstructions: &HashSet<Point>,
     guard_position: Point,
     guard_heading: Heading,
-) -> HashSet<Point> {
+) -> (HashSet<(Point, Heading)>, Heading) {
     let mut guard_position = guard_position;
     let mut guard_heading = guard_heading;
-    let mut visited: HashSet<Point> = HashSet::new();
+    let mut visited: HashSet<(Point, Heading)> = HashSet::new();
 
-    while guard_heading != Heading::Oustide {
-        visited.insert(guard_position);
+    while guard_heading != Heading::Oustide && guard_heading != Heading::Looping {
+        visited.insert((guard_position, guard_heading.clone()));
         //print(dimensions, obstructions, guard_position, &visited);
 
         let res = step(dimensions, obstructions, guard_position, guard_heading);
         guard_position = res.0;
         guard_heading = res.1;
+
+        if visited.contains(&(guard_position, guard_heading.clone())) {
+            return (visited, Heading::Looping);
+        }
     }
 
-    visited
+    (visited, guard_heading)
+}
+
+fn find_spots(
+    dimensions: (usize, usize),
+    obstructions: &HashSet<Point>,
+    guard_position: Point,
+    guard_heading: Heading,
+) -> HashSet<Point> {
+    let mut guard_position = guard_position;
+    let mut guard_heading = guard_heading;
+    let mut visited: HashSet<(Point, Heading)> = HashSet::new();
+
+    let mut spots: HashSet<Point> = HashSet::new();
+
+    while guard_heading != Heading::Oustide && guard_heading != Heading::Looping {
+        visited.insert((guard_position, guard_heading.clone()));
+        //print(dimensions, obstructions, guard_position, &visited);
+
+        let mut obstructions_copy = obstructions.clone();
+        let test_obstruction = guard_heading.forward(&guard_position);
+        obstructions_copy.insert(test_obstruction);
+        let (_, result) = walk(
+            dimensions,
+            &obstructions_copy,
+            guard_position,
+            guard_heading.clone(),
+        );
+
+        if result == Heading::Looping {
+            spots.insert(test_obstruction);
+        }
+
+        let res = step(
+            dimensions,
+            obstructions,
+            guard_position,
+            guard_heading.clone(),
+        );
+        guard_position = res.0;
+        guard_heading = res.1;
+    }
+
+    spots
 }
 
 /*
@@ -164,29 +210,13 @@ fn print(
 fn solve(input: &str) -> i32 {
     let (dimensions, obstructions, guard_position) = parse_map(input);
 
-    let visited = walk(dimensions, &obstructions, guard_position, Heading::Upp);
-
-    //print(dimensions, &obstructions, guard_position, &visited);
+    let spots = find_spots(dimensions, &obstructions, guard_position, Heading::Upp);
 
     /*
     println!("{total}");
     */
-    /*
-    ....#.....
-    ....XXXXX#
-    ....X...X.
-    ..#.X...X.
-    ..XXXXX#X.
-    ..X.X.X.X.
-    .#XXXXXXX.
-    .XXXXXXX#.
-    #XXXXXXX..
-    ......#X..
 
-    41 X's total.
-    */
-
-    visited.len() as i32
+    spots.len() as i32
 }
 
 #[cfg(test)]
