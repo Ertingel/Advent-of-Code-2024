@@ -30,6 +30,7 @@ fn parse_input(input: &str) -> Vec<(i64, Vec<i64>)> {
 enum Operator {
     Addition,
     Multiplication,
+    Concatenation,
 }
 
 impl Operator {
@@ -37,11 +38,17 @@ impl Operator {
         match self {
             Operator::Addition => a + b,
             Operator::Multiplication => a * b,
+            Operator::Concatenation => (a.to_string() + &b.to_string()).parse().unwrap(),
         }
     }
 
-    fn types() -> std::array::IntoIter<Operator, 2> {
-        [Operator::Addition, Operator::Multiplication].into_iter()
+    fn types() -> std::array::IntoIter<Operator, 3> {
+        [
+            Operator::Addition,
+            Operator::Multiplication,
+            Operator::Concatenation,
+        ]
+        .into_iter()
     }
 }
 
