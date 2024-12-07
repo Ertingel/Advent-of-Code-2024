@@ -7,12 +7,108 @@ fn main() {
     println!("Day07 part1: {output}");
 }
 
+fn parse_input(input: &str) -> Vec<(i32, Vec<i32>)> {
+    input
+        .lines()
+        .map(|line| {
+            let mut res = line.split(": ");
+            let result: i32 = res.next().unwrap().parse().unwrap();
+            let numbers: Vec<i32> = res
+                .next()
+                .unwrap()
+                .split(' ')
+                .map(|n| n.parse::<i32>().unwrap())
+                .collect();
+
+            (result, numbers)
+        })
+        .collect()
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum Operator {
+    Addition,
+    Multiplication,
+}
+
+impl Operator {
+    fn operate(&self, a: i32, b: i32) -> i32 {
+        match self {
+            Operator::Addition => a + b,
+            Operator::Multiplication => a * b,
+        }
+    }
+
+    fn types() -> std::array::IntoIter<Operator, 2> {
+        [Operator::Addition, Operator::Multiplication].into_iter()
+    }
+}
+
+fn find_solution(
+    result: &i32,
+    numbers: Vec<i32>,
+    acc: &i32,
+    stack: Vec<Operator>,
+) -> Option<Vec<Operator>> {
+    if numbers.is_empty() {
+        if result == acc {
+            return Some(stack.clone());
+        } else {
+            return None;
+        }
+    }
+
+    for operator in Operator::types() {
+        let mut numbers2 = numbers.clone();
+        let acc2 = operator.operate(*acc, numbers2.remove(0));
+        let mut stack2 = stack.clone();
+        stack2.push(operator);
+
+        let res = find_solution(result, numbers2, &acc2, stack2);
+        if let Some(res) = res {
+            return Some(res);
+        }
+    }
+
+    None
+}
+
+fn solve_equations(equations: &[(i32, Vec<i32>)]) -> Vec<(i32, Vec<i32>, Option<Vec<Operator>>)> {
+    equations
+        .iter()
+        .map(|(result, numbers)| {
+            (
+                *result,
+                numbers.clone(),
+                find_solution(result, numbers.clone(), &0, Vec::new()),
+            )
+        })
+        .collect()
+}
+
 fn solve(input: &str) -> i32 {
-    let total: i32 = 0;
+    let equations: Vec<(i32, Vec<i32>)> = parse_input(input);
+
+    let solved = solve_equations(&equations);
+
+    let valid: Vec<(i32, Vec<i32>, Vec<Operator>)> = solved
+        .clone()
+        .into_iter()
+        .filter_map(|(result, numbers, solution)| {
+            if let Some(solution) = solution {
+                return Some((result, numbers, solution));
+            }
+            None
+        })
+        .collect();
+
+    let total: i32 = valid.clone().into_iter().map(|(result, _, _)| result).sum();
 
     /*
+    println!("{:?}", equations);
+    println!("{:?}", solved);
+    println!("{:?}", valid);
     println!("{total}");
-    // 2 + 1 + 0 + 1 + 2 + 5 = 11
     */
 
     total
