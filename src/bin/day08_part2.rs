@@ -63,12 +63,15 @@ fn get_nodes(dimensions: Point, antennas: &HashSet<Point>) -> HashSet<Point> {
         })
         .collect();
 
+    let count = dimensions.0.max(dimensions.1);
+
     let nodes: HashSet<Point> = combinations
         .iter()
-        .map(|((x1, y1), (x2, y2))| {
+        .flat_map(|((x1, y1), (x2, y2))| {
             let dx = x1 - x2;
             let dy = y1 - y2;
-            (x1 + dx, y1 + dy)
+
+            (0..count).map(move |i| (x1 + dx * i, y1 + dy * i))
         })
         .filter(|node| is_in_bounds(dimensions, *node))
         .collect();
