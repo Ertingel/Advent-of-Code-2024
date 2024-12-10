@@ -55,52 +55,49 @@ fn find_trailheads(map: &Map) -> HashSet<Point> {
         .collect()
 }
 
-fn walk_trailhead(dimensions: Point, map: &Map, point: Point) -> HashSet<Point> {
+fn walk_trailhead(dimensions: Point, map: &Map, point: Point) -> u32 {
     let (x, y) = point;
     let height = map[y as usize][x as usize];
 
     if height == 9 {
-        return HashSet::from([point]);
+        return 1;
     }
 
     let directions = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)];
 
     directions
         .iter()
-        .flat_map(|point2| {
+        .map(|point2| {
             let (x2, y2) = point2;
 
             if !is_in_bounds(dimensions, *point2) {
-                return HashSet::new();
+                return 0;
             }
 
             let height2 = map[*y2 as usize][*x2 as usize];
 
             if height2 != height + 1 {
-                return HashSet::new();
+                return 0;
             }
 
             walk_trailhead(dimensions, map, *point2)
         })
-        .collect()
+        .sum()
 }
 
-fn get_scores(dimensions: Point, map: &Map) -> i32 {
+fn get_scores(dimensions: Point, map: &Map) -> u32 {
     let trailheads = find_trailheads(map);
 
     trailheads
         .iter()
-        .map(|trailhead| -> i32 {
-            let ends = walk_trailhead(dimensions, map, *trailhead);
-            ends.len() as i32
-        })
+        .map(|trailhead| walk_trailhead(dimensions, map, *trailhead))
         .sum()
 }
 
-fn solve(input: &str) -> i32 {
+fn solve(input: &str) -> u32 {
     let (dimensions, map) = parse_input(input);
 
-    let scores: i32 = get_scores(dimensions, &map);
+    let scores: u32 = get_scores(dimensions, &map);
 
     scores
 }
