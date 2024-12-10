@@ -1,8 +1,6 @@
 // cargo run  --bin day09_part2
 // cargo test --bin day09_part2
 
-use std::collections::HashSet;
-
 fn main() {
     let input = include_str!("../././input/day09.txt");
     let output = solve(input);
