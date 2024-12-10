@@ -1,6 +1,8 @@
 // cargo run  --bin day09_part2
 // cargo test --bin day09_part2
 
+use std::collections::HashSet;
+
 fn main() {
     let input = include_str!("../././input/day09.txt");
     let output = solve(input);
@@ -147,6 +149,8 @@ fn compress_memory(files: &[File]) -> Vec<File> {
     out
 }
  */
+
+/*
 fn print_memory(files: &[File]) {
     let len = files.iter().map(|file| file.space.end).max().unwrap_or(0);
     for i in 0..len {
@@ -165,7 +169,7 @@ fn print_memory(files: &[File]) {
 
     println!();
 }
-
+ */
 fn compute_checksum(files: &[File]) -> u64 {
     files
         .iter()
@@ -179,9 +183,9 @@ fn solve(input: &str) -> u64 {
     let checksum: u64 = compute_checksum(&compressed);
 
     //println!("{:?}", files);
-    print_memory(&files);
-    print_memory(&compressed);
-    println!("{checksum}");
+    //print_memory(&files);
+    //print_memory(&compressed);
+    //println!("{checksum}");
 
     /*
     2333133121414131402
