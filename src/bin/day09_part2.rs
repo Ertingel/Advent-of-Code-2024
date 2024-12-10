@@ -6,7 +6,7 @@ fn main() {
     let output = solve(input);
     println!("Day09 part2: {output}");
 }
-/*
+
 #[derive(Debug, Clone)]
 struct File {
     id: u64,
@@ -16,6 +16,26 @@ struct File {
 impl File {
     fn new(id: u64, space: std::ops::Range<u64>) -> File {
         File { id, space }
+    }
+
+    fn start(&self) -> u64 {
+        self.space.start
+    }
+
+    fn end(&self) -> u64 {
+        self.space.end
+    }
+
+    fn size(&self) -> u64 {
+        self.end() - self.start()
+    }
+
+    fn move_to(&mut self, start: u64) -> &Self {
+        let size = self.size();
+        self.space.start = start;
+        self.space.end = start + size;
+
+        self
     }
 }
 
@@ -41,11 +61,92 @@ fn parse_input(input: &str) -> Vec<File> {
 }
 
 fn compress_memory(files: &[File]) -> Vec<File> {
-    let mut out: Vec<File> = files.to_vec();
+    let mut out: Vec<File> = Vec::from(files);
 
-    todo!()
+    for index1 in (1..out.len()).rev() {
+        let file1 = &out[index1];
+        let size = file1.size();
+
+        for index2 in 0..(index1 - 1) {
+            let file2_end = out[index2].end();
+            let file3_start = out[index2 + 1].start();
+
+            let space = file3_start - file2_end;
+
+            if size <= space {
+                let mut file1 = out.remove(index1);
+                file1.move_to(file2_end);
+                out.insert(index2 + 1, file1);
+
+                break;
+            }
+        }
+
+        //print_memory(&out);
+    }
+
+    out
 }
 
+/*
+fn compress_memory(files: &[File]) -> Vec<File> {
+    let mut remaining: VecDeque<File> = VecDeque::new();
+    remaining.extend(files.iter().cloned());
+
+    let mut out: Vec<File> = Vec::new();
+
+    while !remaining.is_empty() {
+        let f1 = remaining.pop_front();
+        let Some(f1) = f1 else { break };
+
+        let f2 = remaining.front();
+        let Some(f2) = f2 else { break };
+
+        let mut space = f2.space.start - f1.space.end;
+        let mut start_index: u64 = f1.space.end;
+        out.push(f1);
+
+        println!("Keeping memory:");
+        print_memory(&out);
+        println!();
+
+        for i in (0..remaining.len()).rev() {
+            let f = remaining.get(i);
+            let Some(f) = f else { break };
+
+            let f_size = f.space.end - f.space.start;
+
+            println!("Checking id {} size {}", f.id, f_size);
+
+            if f_size <= space {
+                let mut f = remaining.remove(i).unwrap();
+
+                println!("Moving memory:");
+                print_memory(&out);
+
+                f.space.start = start_index;
+                f.space.end = start_index + f_size;
+                out.push(f);
+
+                print_memory(&out);
+
+                space -= f_size;
+                start_index += f_size;
+
+                println!("{space}");
+            }
+
+            if space == 0 {
+                break;
+            }
+        }
+
+        println!();
+    }
+
+    out
+}
+ */
 fn print_memory(files: &[File]) {
     let len = files.iter().map(|file| file.space.end).max().unwrap_or(0);
     for i in 0..len {
@@ -64,86 +165,12 @@ fn print_memory(files: &[File]) {
 
     println!();
 }
- */
 
-fn parse_input(input: &str) -> Vec<Option<u32>> {
-    let mut out: Vec<Option<u32>> = Vec::new();
-
-    let mut id: u32 = 0;
-    let mut iter = input.chars();
-
-    while let Some(file_size) = iter.next() {
-        let file_size = file_size.to_digit(10).unwrap();
-        for _ in 0..file_size {
-            out.push(Some(id));
-        }
-        id += 1;
-
-        if let Some(empty_length) = iter.next() {
-            let empty_length = empty_length.to_digit(10).unwrap();
-            for _ in 0..empty_length {
-                out.push(None);
-            }
-        }
-    }
-
-    out
-}
-
-fn compress_memory(files: &[Option<u32>]) -> Vec<u32> {
-    let mut out: Vec<u32> = Vec::new();
-    let mut end = files.len();
-
-    for index in 0..files.len() {
-        if index >= end {
-            return out;
-        }
-
-        if let Some(id) = files[index] {
-            out.push(id);
-            continue;
-        }
-
-        while index < end {
-            end -= 1;
-            if let Some(id) = files[end] {
-                out.push(id);
-                break;
-            }
-        }
-    }
-
-    out
-}
-
-fn compute_checksum(files: &[u32]) -> u64 {
+fn compute_checksum(files: &[File]) -> u64 {
     files
         .iter()
-        .enumerate()
-        .map(|(index, id)| {
-            let a = index as u64;
-            let b = *id as u64;
-            a * b
-        })
+        .map(|file| file.space.clone().map(|index| index * file.id).sum::<u64>())
         .sum()
-}
-
-fn print_memory(files: &[Option<u32>]) {
-    for id in files {
-        if let Some(id) = id {
-            print!("{id}");
-        } else {
-            print!(".");
-        }
-    }
-    println!();
-}
-
-fn print_memory_compressed(files: &[u32]) {
-    for id in files {
-        print!("{id}");
-    }
-    println!();
 }
 
 fn solve(input: &str) -> u64 {
@@ -153,7 +180,7 @@ fn solve(input: &str) -> u64 {
 
     //println!("{:?}", files);
     print_memory(&files);
-    print_memory_compressed(&compressed);
+    print_memory(&compressed);
     println!("{checksum}");
 
     /*
