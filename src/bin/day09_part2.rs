@@ -1,6 +1,8 @@
 // cargo run  --bin day09_part2
 // cargo test --bin day09_part2
 
+use std::collections::HashSet;
+
 fn main() {
     let input = include_str!("../././input/day09.txt");
     let output = solve(input);
@@ -37,6 +39,11 @@ impl File {
 
         self
     }
+
+    fn is_overlapping(&self, other: &File) -> bool {
+        (self.start() <= other.start() && other.start() < self.end())
+            || (self.start() <= other.end() && other.end() < self.end())
+    }
 }
 
 fn parse_input(input: &str) -> Vec<File> {
@@ -60,6 +67,50 @@ fn parse_input(input: &str) -> Vec<File> {
     out
 }
 
+fn compress_memory(files: &[File]) -> Vec<File> {
+    let mut out: Vec<File> = Vec::from(files);
+    let mut moved_list: HashSet<u64> = HashSet::new();
+
+    let mut index = out.len() - 1;
+
+    //print_memory(&out);
+
+    'main: while index > 0 {
+        let size = out[index].size();
+
+        if moved_list.contains(&out[index].id) {
+            index -= 1;
+            continue;
+        }
+
+        //println!("Checking {}", out[index].id);
+
+        for index2 in 0..index {
+            let space = out[index2 + 1].start() - out[index2].end();
+
+            //println!("{} {}", size, space);
+
+            if size <= space {
+                let mut file = out.remove(index);
+
+                //println!("Moved {}", file.id);
+                //print_memory(&out);
+                moved_list.insert(file.id);
+
+                file.move_to(out[index2].end());
+                out.insert(index2 + 1, file);
+
+                continue 'main;
+            }
+        }
+
+        index -= 1;
+    }
+
+    out
+}
+
+/*
 fn compress_memory(files: &[File]) -> Vec<File> {
     let mut out: Vec<File> = Vec::from(files);
 
@@ -87,70 +138,33 @@ fn compress_memory(files: &[File]) -> Vec<File> {
 
     out
 }
-
-/*
-fn compress_memory(files: &[File]) -> Vec<File> {
-    let mut remaining: VecDeque<File> = VecDeque::new();
-    remaining.extend(files.iter().cloned());
-
-    let mut out: Vec<File> = Vec::new();
-
-    while !remaining.is_empty() {
-        let f1 = remaining.pop_front();
-        let Some(f1) = f1 else { break };
-
-        let f2 = remaining.front();
-        let Some(f2) = f2 else { break };
-
-        let mut space = f2.space.start - f1.space.end;
-        let mut start_index: u64 = f1.space.end;
-        out.push(f1);
-
-        println!("Keeping memory:");
-        print_memory(&out);
-        println!();
-
-        for i in (0..remaining.len()).rev() {
-            let f = remaining.get(i);
-            let Some(f) = f else { break };
-
-            let f_size = f.space.end - f.space.start;
-
-            println!("Checking id {} size {}", f.id, f_size);
-
-            if f_size <= space {
-                let mut f = remaining.remove(i).unwrap();
-
-                println!("Moving memory:");
-                print_memory(&out);
-
-                f.space.start = start_index;
-                f.space.end = start_index + f_size;
-                out.push(f);
-
-                print_memory(&out);
-
-                space -= f_size;
-                start_index += f_size;
-
-                println!("{space}");
-            }
-
-            if space == 0 {
-                break;
-            }
-        }
-
-        println!();
-    }
-
-    out
-}
  */
 
+fn validate_memory(files: &[File]) {
+    for (i, file1) in files.iter().enumerate() {
+        for file2 in files[i + 1..].iter() {
+            if file1.is_overlapping(file2) {
+                panic!(
+                    "File with id {} is overlapping with id {}\n File:{} {}-{}\n File:{} {}-{}",
+                    file1.id,
+                    file2.id,
+                    file1.id,
+                    file1.start(),
+                    file1.end(),
+                    file2.id,
+                    file2.start(),
+                    file2.end()
+                );
+            }
+        }
+    }
+}
 /*
 fn print_memory(files: &[File]) {
     let len = files.iter().map(|file| file.space.end).max().unwrap_or(0);
+
+    assert!(len < 50, "Length is {len}!");
+
     for i in 0..len {
         let id = files
             .iter()
@@ -179,6 +193,8 @@ fn solve(input: &str) -> u64 {
     let files = parse_input(input);
     let compressed = compress_memory(&files);
     let checksum: u64 = compute_checksum(&compressed);
+
+    validate_memory(&compressed);
 
     //println!("{:?}", files);
     //print_memory(&files);
