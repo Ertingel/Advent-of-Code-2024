@@ -7,14 +7,14 @@ fn main() {
     println!("Day11 part1: {output}");
 }
 
-fn parse_input(input: &str) -> Vec<u32> {
+fn parse_input(input: &str) -> Vec<u64> {
     input.split(' ').map(|num| num.parse().unwrap()).collect()
 }
 
-fn blink(stones: &[u32]) -> Vec<u32> {
+fn blink(stones: &[u64]) -> Vec<u64> {
     stones
         .iter()
-        .flat_map(|stone| -> Vec<u32> {
+        .flat_map(|stone| -> Vec<u64> {
             if *stone == 0 {
                 return vec![1];
             }
