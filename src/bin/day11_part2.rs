@@ -1,6 +1,8 @@
 // cargo run  --bin day11_part2
 // cargo test --bin day11_part2
 
+use std::collections::HashMap;
+
 fn main() {
     let input = include_str!("../././input/day11.txt");
     let output = solve(input, 75);
@@ -11,35 +13,46 @@ fn parse_input(input: &str) -> Vec<u64> {
     input.split(' ').map(|num| num.parse().unwrap()).collect()
 }
 
-fn blink(stones: &[u64]) -> Vec<u64> {
-    stones
-        .iter()
-        .flat_map(|stone| -> Vec<u64> {
-            if *stone == 0 {
-                return vec![1];
-            }
-
-            let str = stone.to_string();
-            if str.len() % 2 == 0 {
-                return vec![
-                    str[0..str.len() / 2].parse().unwrap(),
-                    str[str.len() / 2..].parse().unwrap(),
-                ];
-            }
-
-            vec![stone * 2024]
-        })
-        .collect()
-}
-
-fn solve(input: &str, times: usize) -> usize {
-    let mut stones = parse_input(input);
-
-    for _ in 0..times {
-        stones = blink(&stones);
+fn blink(memoize: &mut HashMap<(u64, u16), u64>, stone: u64, times: u16) -> u64 {
+    if let Some(result) = memoize.get(&(stone, times)) {
+        return *result;
     }
 
-    stones.len()
+    if times == 0 {
+        memoize.insert((stone, times), 1);
+        return 1;
+    }
+
+    if stone == 0 {
+        let result = blink(memoize, 1, times - 1);
+        memoize.insert((stone, times), result);
+        return result;
+    }
+
+    let str = stone.to_string();
+    if str.len() % 2 == 0 {
+        let result1 = blink(memoize, str[0..str.len() / 2].parse().unwrap(), times - 1);
+        let result2 = blink(memoize, str[str.len() / 2..].parse().unwrap(), times - 1);
+
+        let result = result1 + result2;
+        memoize.insert((stone, times), result);
+        return result;
+    }
+
+    let result = blink(memoize, stone * 2024, times - 1);
+    memoize.insert((stone, times), result);
+    result
+}
+
+fn solve(input: &str, times: u16) -> u64 {
+    let stones = parse_input(input);
+
+    let mut memoize: HashMap<(u64, u16), u64> = HashMap::new();
+
+    stones
+        .iter()
+        .map(|stone| blink(&mut memoize, *stone, times))
+        .sum()
 }
 
 #[cfg(test)]
