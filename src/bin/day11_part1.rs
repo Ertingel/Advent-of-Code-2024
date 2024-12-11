@@ -7,10 +7,39 @@ fn main() {
     println!("Day11 part1: {output}");
 }
 
-fn solve(input: &str, times: usize) -> i32 {
-    let total: i32 = 0;
+fn parse_input(input: &str) -> Vec<u32> {
+    input.split(' ').map(|num| num.parse().unwrap()).collect()
+}
 
-    total
+fn blink(stones: &[u32]) -> Vec<u32> {
+    stones
+        .iter()
+        .flat_map(|stone| -> Vec<u32> {
+            if *stone == 0 {
+                return vec![1];
+            }
+
+            let str = stone.to_string();
+            if str.len() % 2 == 0 {
+                return vec![
+                    str[0..str.len() / 2].parse().unwrap(),
+                    str[str.len() / 2..].parse().unwrap(),
+                ];
+            }
+
+            vec![stone * 2024]
+        })
+        .collect()
+}
+
+fn solve(input: &str, times: usize) -> usize {
+    let mut stones = parse_input(input);
+
+    for _ in 0..times {
+        stones = blink(&stones);
+    }
+
+    stones.len()
 }
 
 #[cfg(test)]
