@@ -317,12 +317,15 @@ pub fn continuous<'a>(
 
 pub fn number<'a, T>() -> impl Fn(&'a str) -> Option<(&'a str, T)>
 where
-    T: 'a + FromStr,
+    T: 'a + FromStr + std::ops::Neg,
 {
     move |input: &str| {
-        let con = continuous(1, usize::MAX, numeric());
-        let (remaining, num) = con(input)?;
-        let num = num.parse::<T>().ok()?;
+        let (remaining, minus) = optional(char('-'))(input)?;
+        let (remaining, num) = continuous(1, usize::MAX, numeric())(remaining)?;
+
+        let minus = minus.unwrap_or("");
+        let num = (minus.to_owned() + num).parse::<T>().ok()?;
+
         Some((remaining, num))
     }
 }
@@ -507,6 +510,7 @@ mod tests {
         assert_eq!(number::<i32>()("ABC"), None);
         assert_eq!(number::<i32>()("123"), Some(("", 123)));
         assert_eq!(number::<i32>()("123abc"), Some(("abc", 123)));
+        assert_eq!(number::<i32>()("-123"), Some(("", -123)));
     }
 
     #[test]
