@@ -62,7 +62,7 @@ impl Robot {
             return None;
         }
 
-        match (self.x > x_mid, self.y > y_mid) {
+        match (self.x >= x_mid, self.y >= y_mid) {
             (false, false) => Some(0),
             (true, false) => Some(1),
             (false, true) => Some(2),
@@ -117,7 +117,7 @@ fn solve(input: &str, space: Point) -> i32 {
 
     let moved_robots: Vec<Robot> = robots
         .iter()
-        .map(|robot| robot.move_robot(&space, &101))
+        .map(|robot| robot.move_robot(&space, &100))
         .collect();
 
     /*
