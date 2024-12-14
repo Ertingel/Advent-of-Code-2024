@@ -3,6 +3,19 @@
 
 use std::{ops::RangeBounds, str::FromStr};
 
+pub fn any<'a, T: 'a>(
+    alternative1: impl Fn(&'a str) -> Option<(&'a str, T)>,
+    alternative2: impl Fn(&'a str) -> Option<(&'a str, T)>,
+) -> impl Fn(&'a str) -> Option<(&'a str, T)> {
+    move |input: &str| {
+        let res = alternative1(input);
+        if res.is_some() {
+            return res;
+        }
+        alternative2(input)
+    }
+}
+
 #[macro_export]
 macro_rules! any {
     ($($args:expr),*) => {{
@@ -72,7 +85,7 @@ macro_rules! pattern {
 }
 */
 
-pub fn take(count: usize) -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn take<'a>(count: usize) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     move |input: &str| {
         let mut itter = input.chars();
         let mut byte_count: usize = 0;
@@ -88,7 +101,7 @@ pub fn take(count: usize) -> impl Fn(&str) -> Option<(&str, &str)> {
     }
 }
 
-pub fn char(char: char) -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn char<'a>(char: char) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     move |input: &str| {
         let c = input.chars().next()?;
         if c == char {
@@ -99,7 +112,7 @@ pub fn char(char: char) -> impl Fn(&str) -> Option<(&str, &str)> {
     }
 }
 
-pub fn not_char(char: char) -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_char<'a>(char: char) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     move |input: &str| {
         let c = input.chars().next()?;
         if c != char {
@@ -110,11 +123,13 @@ pub fn not_char(char: char) -> impl Fn(&str) -> Option<(&str, &str)> {
     }
 }
 
-pub fn newline() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn newline<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     char('\n')
 }
 
-pub fn range(range: impl RangeBounds<char>) -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn range<'a>(
+    range: impl RangeBounds<char> + 'static,
+) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     move |input: &str| {
         let c = input.chars().next()?;
         if range.contains(&c) {
@@ -125,7 +140,9 @@ pub fn range(range: impl RangeBounds<char>) -> impl Fn(&str) -> Option<(&str, &s
     }
 }
 
-pub fn not_range(range: impl RangeBounds<char>) -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_range<'a>(
+    range: impl RangeBounds<char> + 'static,
+) -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     move |input: &str| {
         let c = input.chars().next()?;
         if !range.contains(&c) {
@@ -136,43 +153,44 @@ pub fn not_range(range: impl RangeBounds<char>) -> impl Fn(&str) -> Option<(&str
     }
 }
 
-pub fn numeric() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn numeric<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     range('0'..='9')
 }
 
-pub fn not_numeric() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_numeric<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     not_range('0'..='9')
 }
 
-pub fn lowercase() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn lowercase<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     range('a'..='z')
 }
 
-pub fn not_lowercase() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_lowercase<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     not_range('a'..='z')
 }
 
-pub fn uppercase() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn uppercase<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     range('A'..='Z')
 }
 
-pub fn not_uppercase() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_uppercase<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     not_range('A'..='Z')
 }
 
-pub fn alpha() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn alpha<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
+    //any::<& str>(&[lowercase(), uppercase()])
     any!(lowercase(), uppercase())
 }
 
-pub fn not_alpha() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_alpha<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     all!(not_lowercase(), not_uppercase())
 }
 
-pub fn alpha_numeric() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn alpha_numeric<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     any!(lowercase(), numeric(), uppercase())
 }
 
-pub fn not_alpha_numeric() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn not_alpha_numeric<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     all!(not_lowercase(), not_numeric(), not_uppercase())
 }
 
@@ -212,7 +230,7 @@ pub fn not_string<'a>(pattern: &'a str) -> impl Fn(&'a str) -> Option<(&'a str, 
     }
 }
 
-pub fn whitespace() -> impl Fn(&str) -> Option<(&str, &str)> {
+pub fn whitespace<'a>() -> impl Fn(&'a str) -> Option<(&'a str, &'a str)> {
     any!(char(' '), string(" "), newline())
 }
 
@@ -220,7 +238,7 @@ pub fn optional<'a, T>(
     pattern: impl Fn(&'a str) -> Option<(&'a str, T)>,
 ) -> impl Fn(&'a str) -> Option<(&'a str, Option<T>)>
 where
-    T: 'static,
+    T: 'a,
 {
     move |input: &str| {
         let res = pattern(input);
@@ -239,7 +257,7 @@ pub fn repeating<'a, T>(
     pattern: impl Fn(&'a str) -> Option<(&'a str, T)>,
 ) -> impl Fn(&'a str) -> Option<(&'a str, Vec<T>)>
 where
-    T: 'static,
+    T: 'a,
 {
     move |input: &str| {
         let mut remaining = input;
@@ -297,9 +315,9 @@ pub fn continuous<'a>(
     }
 }
 
-pub fn number<T>() -> impl Fn(&str) -> Option<(&str, T)>
+pub fn number<'a, T>() -> impl Fn(&'a str) -> Option<(&'a str, T)>
 where
-    T: 'static + FromStr,
+    T: 'a + FromStr,
 {
     move |input: &str| {
         let con = continuous(1, usize::MAX, numeric());
@@ -339,7 +357,7 @@ pub fn find_all<'a, T>(
     pattern: impl Fn(&'a str) -> Option<(&'a str, T)>,
 ) -> impl Fn(&'a str) -> Vec<T>
 where
-    T: 'static,
+    T: 'a,
 {
     move |input: &str| {
         let mut remaining = input;
