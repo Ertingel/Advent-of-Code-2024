@@ -13,15 +13,15 @@ fn main() {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct Button {
-    movement: HashMap<char, i32>,
-    cost: i32,
+    movement: HashMap<char, i64>,
+    cost: i64,
 }
 
 impl Button {
-    fn parse_axes(data: &str) -> Option<(&str, (char, i32))> {
+    fn parse_axes(data: &str) -> Option<(&str, (char, i64))> {
         let (data, axis) = parsing::alpha()(data)?;
         let (data, sign) = parsing::any(parsing::char('+'), parsing::char('-'))(data)?;
-        let (data, mut amount) = parsing::number::<i32>()(data)?;
+        let (data, mut amount) = parsing::number::<i64>()(data)?;
         let (data, _) = parsing::optional(parsing::string(", "))(data)?;
 
         let axis = axis.chars().next()?;
@@ -42,7 +42,7 @@ impl Button {
         let (data, _) = parsing::char('\n')(data)?;
 
         let label = label.chars().next()?;
-        let movement: HashMap<char, i32> = movement.iter().cloned().collect();
+        let movement: HashMap<char, i64> = movement.iter().cloned().collect();
 
         Some((data, (label, Self { movement, cost: 1 })))
     }
@@ -51,15 +51,17 @@ impl Button {
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct ClawMachine {
     buttons: HashMap<char, Button>,
-    prize: HashMap<char, i32>,
+    prize: HashMap<char, i64>,
 }
 
 impl ClawMachine {
-    fn parse_axes(data: &str) -> Option<(&str, (char, i32))> {
+    fn parse_axes(data: &str) -> Option<(&str, (char, i64))> {
         let (data, axis) = parsing::alpha()(data)?;
         let (data, _) = parsing::char('=')(data)?;
-        let (data, amount) = parsing::number::<i32>()(data)?;
+        let (data, mut amount) = parsing::number::<i64>()(data)?;
         let (data, _) = parsing::optional(parsing::string(", "))(data)?;
+
+        amount += 10000000000000;
 
         let axis = axis.chars().next()?;
         Some((data, (axis, amount)))
@@ -75,7 +77,7 @@ impl ClawMachine {
         let (data, prize) = parsing::repeating(1, 10, ClawMachine::parse_axes)(data)?;
 
         let mut buttons: HashMap<char, Button> = buttons.iter().cloned().collect();
-        let prize: HashMap<char, i32> = prize.iter().cloned().collect();
+        let prize: HashMap<char, i64> = prize.iter().cloned().collect();
 
         buttons.get_mut(&'A').unwrap().cost = 3;
         buttons.get_mut(&'B').unwrap().cost = 1;
@@ -83,7 +85,7 @@ impl ClawMachine {
         Some((data, ClawMachine { buttons, prize }))
     }
 
-    fn get_solution(&self) -> Option<(i32, i32)> {
+    fn get_solution(&self) -> Option<(i64, i64)> {
         /*
         # Solving system of linear equations
 
@@ -151,7 +153,7 @@ impl ClawMachine {
         Some((a, b))
     }
 
-    fn get_solution_cost(&self) -> Option<i32> {
+    fn get_solution_cost(&self) -> Option<i64> {
         let solution = self.get_solution()?;
 
         let a = self.buttons.get(&'A').unwrap().cost;
@@ -161,13 +163,13 @@ impl ClawMachine {
     }
 }
 
-fn solve(input: &str) -> i32 {
+fn solve(input: &str) -> i64 {
     let arcade: Vec<ClawMachine> = input
         .split("\n\n")
         .map(|data| ClawMachine::from_string(data).unwrap().1)
         .collect();
 
-    let total: i32 = arcade
+    let total: i64 = arcade
         .iter()
         .filter_map(|machine| machine.get_solution_cost())
         .sum();
@@ -199,6 +201,6 @@ Button A: X+69, Y+23
 Button B: X+27, Y+71
 Prize: X=18641, Y=10279";
         let output = solve(input);
-        assert_eq!(output, 480)
+        assert_eq!(output, 875318608908)
     }
 }
