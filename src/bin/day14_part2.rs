@@ -1,12 +1,18 @@
 // cargo run  --bin day14_part2
 // cargo test --bin day14_part2
 
+use std::{
+    collections::HashSet,
+    io::{stdin, stdout, Write},
+};
+
 use advent_of_code::parsing;
 
 fn main() {
     let input = include_str!("../././input/day14.txt");
-    let output = solve(input, (101, 103));
-    println!("Day14 part2: {output}");
+    solve(input, (101, 103));
+    //let output = solve(input, (101, 103));
+    //println!("Day14 part2: {output}");
 }
 
 type Point = (i16, i16);
@@ -53,6 +59,7 @@ impl Robot {
         clone
     }
 
+    /*
     fn quadrant(&self, space: &Point) -> Option<usize> {
         let (width, height) = *space;
         let x_mid = width / 2;
@@ -69,8 +76,26 @@ impl Robot {
             (true, true) => Some(3),
         }
     }
+     */
 }
-/*
+
+fn check(robots: &[Robot], count: i16) -> bool {
+    let map: HashSet<Point> = robots.iter().map(|robot| (robot.x, robot.y)).collect();
+
+    map.iter()
+        .map(|(x, y)| {
+            for i in 1..count {
+                if !map.contains(&(x + i, *y)) {
+                    return false;
+                }
+            }
+            true
+        })
+        .filter(|a| *a)
+        .count()
+        > 0
+}
+
 fn print_robots(space: &Point, robots: &[Robot]) {
     let (width, height) = *space;
     let x_mid = width / 2;
@@ -95,7 +120,7 @@ fn print_robots(space: &Point, robots: &[Robot]) {
         }
         println!();
     }
-
+    /*
     let count = robots.iter().filter(|robot| robot.x < 0).count();
     println!("(x <  0     ) => {count}");
 
@@ -107,37 +132,50 @@ fn print_robots(space: &Point, robots: &[Robot]) {
 
     let count = robots.iter().filter(|robot| robot.y >= height).count();
     println!("(y >= height) => {count}");
+     */
 }
- */
-fn solve(input: &str, space: Point) -> i32 {
-    let robots: Vec<Robot> = input
+
+fn solve(input: &str, space: Point) {
+    let mut robots: Vec<Robot> = input
         .lines()
         .map(|line| Robot::from_string(line).unwrap().1)
         .collect();
 
-    let moved_robots: Vec<Robot> = robots
+    /*
+    robots = robots
         .iter()
-        .map(|robot| robot.move_robot(&space, &100))
+        .map(|robot| robot.move_robot(&space, &2024))
         .collect();
 
-    /*
     print_robots(&space, &robots);
-    println!();
-    print_robots(&space, &moved_robots);
      */
-    let mut quadrants: [i32; 4] = [0; 4];
+    let mut time = 0;
 
-    for robot in &moved_robots {
-        if let Some(quad) = robot.quadrant(&space) {
-            quadrants[quad] += 1;
+    loop {
+        robots = robots
+            .iter()
+            .map(|robot| robot.move_robot(&space, &1))
+            .collect();
+
+        time += 1;
+
+        while !check(&robots, 8) {
+            robots = robots
+                .iter()
+                .map(|robot| robot.move_robot(&space, &1))
+                .collect();
+
+            time += 1;
         }
+
+        print_robots(&space, &robots);
+        println!("Time: {time}");
+        let _ = stdout().flush();
+        let mut s = String::new();
+        stdin().read_line(&mut s).expect("ERROR!:Could not parse! ");
     }
-
-    let safety_factor: i32 = quadrants.iter().product();
-
-    safety_factor
 }
-
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,7 +194,8 @@ p=9,3 v=2,3
 p=7,3 v=-1,2
 p=2,4 v=2,-3
 p=9,5 v=-3,-3";
-        let output = solve(input, (11, 7));
+        let output = solve(input, (11, 7), 100);
         assert_eq!(output, 12)
     }
 }
+ */
