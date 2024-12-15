@@ -1,10 +1,10 @@
-// cargo run  --bin day15_part1
-// cargo test --bin day15_part1
+// cargo run  --bin day15_part2
+// cargo test --bin day15_part2
 
 fn main() {
     let input = include_str!("../././input/day15.txt");
     let output = solve(input);
-    println!("Day15 part1: {output}");
+    println!("Day15 part2: {output}");
 }
 
 type Point = (i16, i16);
@@ -40,31 +40,30 @@ impl Instruction {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum FloorTile {
-    Box,
+    BoxLeft,
+    BoxRight,
     Nothing,
-
     Wall,
 }
 
 impl FloorTile {
-    fn from_char(char: char) -> Option<Self> {
+    fn from_char(char: char) -> Option<[Self; 2]> {
         match char {
-            'O' => Some(FloorTile::Box),
-            '.' => Some(FloorTile::Nothing),
-            '#' => Some(FloorTile::Wall),
+            'O' => Some([FloorTile::BoxLeft, FloorTile::BoxRight]),
+            '.' => Some([FloorTile::Nothing, FloorTile::Nothing]),
+            '#' => Some([FloorTile::Wall, FloorTile::Wall]),
             _ => None,
         }
     }
 
-    /*
-    fn to_char(&self) -> char {
+    fn to_char(self) -> char {
         match self {
-            FloorTile::Box => 'O',
+            FloorTile::BoxLeft => '[',
+            FloorTile::BoxRight => ']',
             FloorTile::Nothing => '.',
             FloorTile::Wall => '#',
         }
     }
-     */
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -86,10 +85,10 @@ impl Warehouse {
             .map(|(y, line)| {
                 line.chars()
                     .enumerate()
-                    .map(|(x, char)| {
+                    .flat_map(|(x, char)| {
                         if char == '@' {
-                            robot = (x as i16, y as i16);
-                            return FloorTile::Nothing;
+                            robot = (2 * x as i16, y as i16);
+                            return [FloorTile::Nothing, FloorTile::Nothing];
                         }
                         FloorTile::from_char(char).unwrap()
                     })
@@ -118,39 +117,108 @@ impl Warehouse {
     }
 
     fn execute_instructions(&mut self, instructions: Vec<Instruction>) {
+        self.print();
+
         for instruction in instructions {
             self.move_robot(instruction);
+            self.print();
         }
     }
 
     fn move_robot(&mut self, instruction: Instruction) {
         let next_point = instruction.move_point(self.robot, 1);
-        let next_tile = self.get(next_point).unwrap();
 
-        match next_tile {
-            FloorTile::Wall => {}
-            FloorTile::Nothing => {
-                self.robot = next_point;
-            }
-            FloorTile::Box => {
-                for i in 2..(self.width.max(self.height)) {
-                    let checked_point = instruction.move_point(self.robot, i);
-                    let checked_tile = self.get(checked_point).unwrap_or(FloorTile::Wall);
+        if self.move_check(next_point, instruction) {
+            self.push(next_point, instruction);
+            self.robot = next_point;
+        }
+    }
 
-                    match checked_tile {
-                        FloorTile::Wall => {
-                            break;
-                        }
-                        FloorTile::Box => {}
-                        FloorTile::Nothing => {
-                            self.set(checked_point, FloorTile::Box);
-                            self.set(next_point, FloorTile::Nothing);
-                            self.robot = next_point;
-                            break;
-                        }
-                    }
-                }
+    fn push(&mut self, (x, y): Point, direction: Instruction) {
+        let tile = self.get((x, y)).unwrap();
+        match (tile, direction) {
+            (FloorTile::BoxLeft, Instruction::Right) => {
+                self.push((x + 2, y), direction);
+
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x + 1, y), FloorTile::BoxLeft);
+                self.set((x + 2, y), FloorTile::BoxRight);
             }
+            (FloorTile::BoxRight, Instruction::Left) => {
+                self.push((x - 2, y), direction);
+
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x - 1, y), FloorTile::BoxRight);
+                self.set((x - 2, y), FloorTile::BoxLeft);
+            }
+
+            (FloorTile::BoxLeft, Instruction::Upp) => {
+                self.push((x, y - 1), direction);
+                self.push((x + 1, y - 1), direction);
+
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x, y - 1), FloorTile::BoxLeft);
+                self.set((x + 1, y), FloorTile::Nothing);
+                self.set((x + 1, y - 1), FloorTile::BoxRight);
+            }
+            (FloorTile::BoxRight, Instruction::Upp) => {
+                self.push((x, y - 1), direction);
+                self.push((x - 1, y - 1), direction);
+
+                self.set((x - 1, y), FloorTile::Nothing);
+                self.set((x - 1, y - 1), FloorTile::BoxLeft);
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x, y - 1), FloorTile::BoxRight);
+            }
+
+            (FloorTile::BoxLeft, Instruction::Down) => {
+                self.push((x, y + 1), direction);
+                self.push((x + 1, y + 1), direction);
+
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x, y + 1), FloorTile::BoxLeft);
+                self.set((x + 1, y), FloorTile::Nothing);
+                self.set((x + 1, y + 1), FloorTile::BoxRight);
+            }
+            (FloorTile::BoxRight, Instruction::Down) => {
+                self.push((x, y + 1), direction);
+                self.push((x - 1, y + 1), direction);
+
+                self.set((x - 1, y), FloorTile::Nothing);
+                self.set((x - 1, y + 1), FloorTile::BoxLeft);
+                self.set((x, y), FloorTile::Nothing);
+                self.set((x, y + 1), FloorTile::BoxRight);
+            }
+
+            (FloorTile::Nothing, _) => {}
+            (FloorTile::Wall, _) => {}
+            _ => panic!(),
+        }
+    }
+
+    fn move_check(&self, (x, y): Point, direction: Instruction) -> bool {
+        let tile = self.get((x, y)).unwrap();
+        match (tile, direction) {
+            (FloorTile::BoxLeft, Instruction::Right) => self.move_check((x + 2, y), direction),
+            (FloorTile::BoxRight, Instruction::Left) => self.move_check((x - 2, y), direction),
+
+            (FloorTile::BoxLeft, Instruction::Upp) => {
+                self.move_check((x, y - 1), direction) && self.move_check((x + 1, y - 1), direction)
+            }
+            (FloorTile::BoxRight, Instruction::Upp) => {
+                self.move_check((x, y - 1), direction) && self.move_check((x - 1, y - 1), direction)
+            }
+
+            (FloorTile::BoxLeft, Instruction::Down) => {
+                self.move_check((x, y + 1), direction) && self.move_check((x + 1, y + 1), direction)
+            }
+            (FloorTile::BoxRight, Instruction::Down) => {
+                self.move_check((x, y + 1), direction) && self.move_check((x - 1, y + 1), direction)
+            }
+
+            (FloorTile::Nothing, _) => true,
+            (FloorTile::Wall, _) => false,
+            _ => panic!(),
         }
     }
 
@@ -181,7 +249,7 @@ impl Warehouse {
                 row.iter()
                     .enumerate()
                     .map(|(x, tile)| {
-                        if *tile == FloorTile::Box {
+                        if *tile == FloorTile::BoxLeft {
                             x as u32 + y as u32 * 100
                         } else {
                             0
@@ -192,7 +260,6 @@ impl Warehouse {
             .sum()
     }
 
-    /*
     fn print(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -204,15 +271,16 @@ impl Warehouse {
             }
             println!();
         }
+
+        println!();
     }
-     */
 }
 
 fn solve(input: &str) -> u32 {
     let (mut warehouse, instructions) = Warehouse::from_string(input);
 
     warehouse.execute_instructions(instructions);
-    //warehouse.print();
+    warehouse.print();
 
     let total: u32 = warehouse.total();
 
@@ -224,7 +292,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day15_part1_main_example() {
+    fn day15_part2_main_example() {
         let input = "##########
 #..O..O.O#
 #......O.#
@@ -249,9 +317,15 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
         let output = solve(input);
         assert_eq!(output, 9021)
     }
+}
+
+/*
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
-    fn day15_part1_example2() {
+    fn day15_part2_example2() {
         let input = "#######
 #...#.#
 #.....#
@@ -265,3 +339,4 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
         assert_eq!(output, 105)
     }
 }
+ */

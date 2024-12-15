@@ -42,7 +42,6 @@ impl Instruction {
 enum FloorTile {
     Box,
     Nothing,
-
     Wall,
 }
 
