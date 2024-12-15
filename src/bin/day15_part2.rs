@@ -117,11 +117,11 @@ impl Warehouse {
     }
 
     fn execute_instructions(&mut self, instructions: Vec<Instruction>) {
-        self.print();
+        //self.print();
 
         for instruction in instructions {
             self.move_robot(instruction);
-            self.print();
+            //self.print();
         }
     }
 
