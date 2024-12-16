@@ -72,7 +72,8 @@ impl Tile {
 struct Map {
     grid: Vec<Vec<Tile>>,
     start: Point,
-    visited: Vec<Vec<bool>>,
+    end: Point,
+    costs: Vec<Vec<Cost>>,
 }
 
 impl Map {
@@ -94,107 +95,123 @@ impl Map {
             .find(|(_, _, tile)| **tile == Tile::Start)
             .unwrap();
 
+        let (end_x, end_y, _) = grid
+            .iter()
+            .enumerate()
+            .flat_map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .map(|(x, tile)| (x, y, tile))
+                    .collect::<Vec<(usize, usize, &Tile)>>()
+            })
+            .find(|(_, _, tile)| **tile == Tile::End)
+            .unwrap();
+
+        let start = (start_x as u16, start_y as u16);
+        let end = (end_x as u16, end_y as u16);
+
         let width = grid.first().unwrap().len();
         let height = grid.len();
 
-        Map {
+        let mut map = Map {
             grid,
-            start: (start_x as u16, start_y as u16),
-            visited: vec![vec![false; width]; height],
+            start,
+            end,
+            costs: vec![vec![u32::MAX; width]; height],
+        };
+
+        map.set_tile(start, Tile::FLoor);
+        map.set_tile(end, Tile::FLoor);
+
+        map.fill_costs(start, Direction::Right, 0);
+
+        map
+    }
+
+    fn get_end_cost(&self) -> Cost {
+        self.get_cost(self.end)
+    }
+
+    fn fill_costs(&mut self, point: Point, direction: Direction, curent_cost: Cost) {
+        if curent_cost >= self.get_cost(point) {
+            return;
+        }
+
+        self.set_cost(point, curent_cost);
+
+        let next_direction = direction;
+        let next_point = next_direction.move_point(point);
+        let next_cost = curent_cost + 1;
+
+        if self.get_tile(next_point) == Tile::FLoor {
+            self.fill_costs(next_point, next_direction, next_cost);
+        }
+
+        let next_direction = direction.rotate_clockwise();
+        let next_point = next_direction.move_point(point);
+        let next_cost = curent_cost + 1 + 1000;
+
+        if self.get_tile(next_point) == Tile::FLoor {
+            self.fill_costs(next_point, next_direction, next_cost);
+        }
+
+        let next_direction = direction.rotate_counterclockwise();
+        let next_point = next_direction.move_point(point);
+        let next_cost = curent_cost + 1 + 1000;
+
+        if self.get_tile(next_point) == Tile::FLoor {
+            self.fill_costs(next_point, next_direction, next_cost);
         }
     }
 
-    fn get_cost(&mut self) -> Cost {
-        let mut costs: Vec<Cost> = Vec::new();
-        self.find_costs(self.start, Direction::Right, 0, &mut costs);
-
-        costs.sort_unstable();
-
-        *costs.first().unwrap()
-    }
-
-    fn find_costs(
-        &mut self,
-        point: Point,
-        direction: Direction,
-        curent_cost: Cost,
-        costs: &mut Vec<Cost>,
-    ) {
-        self.set_visited(point, true);
-
-        let forward = direction.move_point(point);
-        if !self.get_visited(forward) {
-            let cost = curent_cost + 1;
-
-            match self.get(forward) {
-                Tile::FLoor => {
-                    self.find_costs(forward, direction, cost, costs);
-                }
-                Tile::End => {
-                    costs.push(cost);
-                }
-                _ => {}
-            }
-        }
-
-        let clockwise = direction.rotate_clockwise().move_point(point);
-        if !self.get_visited(clockwise) {
-            let cost = curent_cost + 1 + 1000;
-
-            match self.get(clockwise) {
-                Tile::FLoor => {
-                    self.find_costs(clockwise, direction.rotate_clockwise(), cost, costs);
-                }
-                Tile::End => {
-                    costs.push(cost);
-                }
-                _ => {}
-            }
-        }
-
-        let counterclockwise = direction.rotate_counterclockwise().move_point(point);
-        if !self.get_visited(counterclockwise) {
-            let cost = curent_cost + 1 + 1000;
-
-            match self.get(counterclockwise) {
-                Tile::FLoor => {
-                    self.find_costs(
-                        counterclockwise,
-                        direction.rotate_counterclockwise(),
-                        cost,
-                        costs,
-                    );
-                }
-                Tile::End => {
-                    costs.push(cost);
-                }
-                _ => {}
-            }
-        }
-
-        self.set_visited(point, false);
-    }
-
-    fn get(&self, point: Point) -> Tile {
+    fn get_tile(&self, point: Point) -> Tile {
         let (x, y) = point;
         self.grid[y as usize][x as usize]
     }
 
-    fn get_visited(&self, point: Point) -> bool {
+    fn set_tile(&mut self, point: Point, tile: Tile) {
         let (x, y) = point;
-        self.visited[y as usize][x as usize]
+        self.grid[y as usize][x as usize] = tile
     }
 
-    fn set_visited(&mut self, point: Point, bool: bool) {
+    fn get_cost(&self, point: Point) -> Cost {
         let (x, y) = point;
-        self.visited[y as usize][x as usize] = bool;
+        self.costs[y as usize][x as usize]
     }
+
+    fn set_cost(&mut self, point: Point, cost: Cost) {
+        let (x, y) = point;
+        self.costs[y as usize][x as usize] = cost;
+    }
+
+    /* fn print(&self) {
+        for (y, row) in self.grid.iter().enumerate() {
+            for (x, tile) in row.iter().enumerate() {
+                match tile {
+                    Tile::Start => print!("S"),
+                    Tile::End => print!("E"),
+                    Tile::FLoor => print!(
+                        "{}",
+                        self.get_cost((x as u16, y as u16))
+                            .to_string()
+                            .chars()
+                            .last()
+                            .unwrap_or('.')
+                    ),
+                    Tile::Wall => print!("#"),
+                }
+            }
+            println!();
+        }
+        println!()
+    } */
 }
 
 fn solve(input: &str) -> Cost {
-    let mut map = Map::from_string(input);
+    let map = Map::from_string(input);
+    //map.print();
 
-    let score: Cost = map.get_cost();
+    let score: Cost = map.get_end_cost();
 
     score
 }
