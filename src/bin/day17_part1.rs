@@ -1,6 +1,8 @@
 // cargo run  --bin day17_part1
 // cargo test --bin day17_part1
 
+use std::fmt;
+
 use advent_of_code::parsing;
 
 fn main() {
@@ -62,6 +64,23 @@ impl Operand {
             Operand::RegC => cpu.reg_c,
 
             Operand::Reserved => panic!(),
+        }
+    }
+}
+
+impl fmt::Display for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Operand::Zero => write!(f, "0"),
+            Operand::One => write!(f, "1"),
+            Operand::Two => write!(f, "2"),
+            Operand::Three => write!(f, "3"),
+
+            Operand::RegA => write!(f, "A"),
+            Operand::RegB => write!(f, "B"),
+            Operand::RegC => write!(f, "C"),
+
+            Operand::Reserved => write!(f, "Reserved"),
         }
     }
 }
@@ -137,49 +156,72 @@ impl Instruction {
     }
 
     fn execute(&self, cpu: &mut Cpu, operand: Operand) {
+        let literal = *cpu.get_byte(1).unwrap() as Value;
+
         match self {
             Instruction::Adv => {
-                cpu.reg_a = (cpu.reg_a as f32 / 2_f32.powf(operand.value(cpu) as f32)) as Value;
-                cpu.ins_pointer += 2;
+                //cpu.reg_a =
+                //    (cpu.reg_a as f32 / 2_f32.powf(operand.value(cpu) as f32)).floor() as Value;
+                //cpu.reg_a /= 2_u32.pow(operand.value(cpu));
+                cpu.reg_a >>= operand.value(cpu);
             }
 
             Instruction::Bxl => {
-                cpu.reg_b ^= operand.value(cpu);
-                cpu.ins_pointer += 2;
+                //cpu.reg_b ^= operand.value(cpu);
+                cpu.reg_b ^= literal;
             }
 
             Instruction::Bst => {
-                cpu.reg_b = operand.value(cpu) % 8;
-                cpu.ins_pointer += 2;
+                //cpu.reg_b = operand.value(cpu) % 8;
+                cpu.reg_b = operand.value(cpu) & 0b_111;
             }
 
             Instruction::Jnz => {
                 if cpu.reg_a != 0 {
-                    cpu.ins_pointer = operand.value(cpu) as usize;
-                } else {
-                    cpu.ins_pointer += 2;
+                    cpu.ins_pointer = literal as usize;
+                    return;
                 }
             }
 
             Instruction::Bxc => {
                 cpu.reg_b ^= cpu.reg_c;
-                cpu.ins_pointer += 2;
             }
 
             Instruction::Out => {
-                cpu.output.push((operand.value(cpu) % 8) as u8);
-                cpu.ins_pointer += 2;
+                // cpu.output.push((operand.value(cpu) % 8) as u8);
+                cpu.output.push((operand.value(cpu) & 0b_111) as u8);
             }
 
             Instruction::Bdv => {
-                cpu.reg_b = (cpu.reg_b as f32 / 2_f32.powf(operand.value(cpu) as f32)) as Value;
-                cpu.ins_pointer += 2;
+                //cpu.reg_b =
+                //    (cpu.reg_a as f32 / 2_f32.powf(operand.value(cpu) as f32)).floor() as Value;
+                //cpu.reg_b = cpu.reg_a / 2_u32.pow(operand.value(cpu));
+                cpu.reg_b = cpu.reg_a >> operand.value(cpu);
             }
 
             Instruction::Cdv => {
-                cpu.reg_c = (cpu.reg_c as f32 / 2_f32.powf(operand.value(cpu) as f32)) as Value;
-                cpu.ins_pointer += 2;
+                //cpu.reg_c =
+                //    (cpu.reg_a as f32 / 2_f32.powf(operand.value(cpu) as f32)).floor() as Value;
+                //cpu.reg_c = cpu.reg_a / 2_u32.pow(operand.value(cpu));
+                cpu.reg_c = cpu.reg_a >> operand.value(cpu);
             }
+        }
+
+        cpu.ins_pointer += 2;
+    }
+}
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Instruction::Adv => write!(f, "ADV"),
+            Instruction::Bxl => write!(f, "BXL"),
+            Instruction::Bst => write!(f, "BST"),
+            Instruction::Jnz => write!(f, "JNZ"),
+            Instruction::Bxc => write!(f, "BXC"),
+            Instruction::Out => write!(f, "OUT"),
+            Instruction::Bdv => write!(f, "BDV"),
+            Instruction::Cdv => write!(f, "CVD"),
         }
     }
 }
@@ -240,6 +282,8 @@ impl Cpu {
         let instruction = Instruction::from_byte(*self.get_byte(0)?);
         let operand = Operand::from_byte(*self.get_byte(1)?);
 
+        //println!("{} {} {}", self.ins_pointer, instruction, operand,);
+
         instruction.execute(self, operand);
 
         Some(())
@@ -273,7 +317,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day17_part1() {
+    fn day17_part1_main_example() {
         let input = "Register A: 729
 Register B: 0
 Register C: 0
@@ -281,5 +325,60 @@ Register C: 0
 Program: 0,1,5,4,3,0";
         let output = solve(input);
         assert_eq!(output, "4,6,3,5,6,3,5,2,1,0")
+    }
+
+    #[test]
+    fn day17_part1_example2() {
+        let input = "Register A: 0
+Register B: 0
+Register C: 9
+
+Program: 2,6,5,5";
+        let output = solve(input);
+        assert_eq!(output, "1")
+    }
+
+    #[test]
+    fn day17_part1_example3() {
+        let input = "Register A: 10
+Register B: 0
+Register C: 0
+
+Program: 5,0,5,1,5,4";
+        let output = solve(input);
+        assert_eq!(output, "0,1,2")
+    }
+
+    #[test]
+    fn day17_part1_example4() {
+        let input = "Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,1,5,4,3,0";
+        let output = solve(input);
+        assert_eq!(output, "4,2,5,6,7,7,7,7,3,1,0")
+    }
+
+    #[test]
+    fn day17_part1_example5() {
+        let input = "Register A: 0
+Register B: 29
+Register C: 0
+
+Program: 1,7,5,5";
+        let output = solve(input);
+        assert_eq!(output, (26 % 8).to_string())
+    }
+
+    #[test]
+    fn day17_part1_example6() {
+        let input = "Register A: 0
+Register B: 2024
+Register C: 43690
+
+Program: 4,0,5,5";
+        let output = solve(input);
+        assert_eq!(output, (44354 % 8).to_string())
     }
 }
