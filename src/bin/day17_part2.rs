@@ -303,12 +303,20 @@ impl Cpu {
 }
 
 fn solve(input: &str) -> Value {
-    let mut cpu = Cpu::from_string(input).unwrap();
+    let original = Cpu::from_string(input).unwrap();
 
-    cpu.run();
+    for i in 0..1000000 {
+        let mut copy = original.clone();
+        copy.reg_a = i;
+
+        copy.run();
+
+        if copy.output == copy.program {
+            return i;
+        }
+    }
 
     let output: Value = 0;
-
     output
 }
 
