@@ -317,7 +317,7 @@ pub fn continuous<'a>(
 
 pub fn number<'a, T>() -> impl Fn(&'a str) -> Option<(&'a str, T)>
 where
-    T: 'a + FromStr + std::ops::Neg,
+    T: 'a + FromStr,
 {
     move |input: &str| {
         let (remaining, minus) = optional(char('-'))(input)?;
