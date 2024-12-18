@@ -1,6 +1,8 @@
 // cargo run  --bin day16_part2
 // cargo test --bin day16_part2
 
+use std::collections::HashSet;
+
 fn main() {
     let input = include_str!("../././input/day16.txt");
     let output = solve(input);
@@ -128,9 +130,9 @@ impl Map {
         map
     }
 
-    fn get_end_cost(&self) -> Cost {
+    /* fn get_end_cost(&self) -> Cost {
         self.get_cost(self.end)
-    }
+    } */
 
     fn fill_costs(&mut self, point: Point, direction: Direction, curent_cost: Cost) {
         if curent_cost >= self.get_cost(point) {
@@ -152,6 +154,7 @@ impl Map {
         let next_cost = curent_cost + 1 + 1000;
 
         if self.get_tile(next_point) == Tile::FLoor {
+            //self.set_cost(point, curent_cost + 1000);
             self.fill_costs(next_point, next_direction, next_cost);
         }
 
@@ -160,7 +163,65 @@ impl Map {
         let next_cost = curent_cost + 1 + 1000;
 
         if self.get_tile(next_point) == Tile::FLoor {
+            //self.set_cost(point, curent_cost + 1000);
             self.fill_costs(next_point, next_direction, next_cost);
+        }
+    }
+
+    fn tiles_to_goal(&self) -> u32 {
+        //self.print();
+
+        let visited = self.walk_tiles_to_goal(self.end, (0, 0)).unwrap();
+
+        //self.print2(&visited);
+
+        visited.len() as u32
+    }
+
+    fn walk_tiles_to_goal(&self, point: Point, from: Point) -> Option<HashSet<Point>> {
+        let mut score = self.get_cost(point);
+
+        if score == 0 {
+            let mut visited: HashSet<Point> = HashSet::new();
+            visited.insert(point);
+            return Some(visited);
+        }
+
+        let (from_x, from_y) = point;
+        let from_sides = [
+            (from_x, from_y - 1),
+            (from_x, from_y + 1),
+            (from_x - 1, from_y),
+            (from_x + 1, from_y),
+        ]
+        .iter()
+        .filter(|p| self.get_tile(**p) == Tile::FLoor)
+        .count();
+
+        if from_sides >= 3 {
+            score += 1000;
+        }
+
+        let (x, y) = point;
+
+        let mut valid = false;
+        let mut visited: HashSet<Point> = HashSet::new();
+
+        for next_point in [(x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)] {
+            let next_cost = self.get_cost(next_point);
+            if from != next_point && next_cost < score {
+                if let Some(c) = self.walk_tiles_to_goal(next_point, point) {
+                    valid = true;
+                    visited.extend(c.iter());
+                    visited.insert(point);
+                }
+            }
+        }
+
+        if valid {
+            Some(visited)
+        } else {
+            None
         }
     }
 
@@ -188,16 +249,38 @@ impl Map {
         for (y, row) in self.grid.iter().enumerate() {
             for (x, tile) in row.iter().enumerate() {
                 match tile {
+                    Tile::Start => print!("SSSS"),
+                    Tile::End => print!("EEEE"),
+                    Tile::FLoor => {
+                        let mut num = (self.get_cost((x as u16, y as u16)) % 10000).to_string();
+
+                        while num.len() < 4 {
+                            num = ".".to_string() + &num;
+                        }
+
+                        print!("{}", num)
+                    }
+                    Tile::Wall => print!("####"),
+                }
+            }
+            println!();
+        }
+        println!()
+    }
+
+    fn print2(&self, visited: &HashSet<Point>) {
+        for (y, row) in self.grid.iter().enumerate() {
+            for (x, tile) in row.iter().enumerate() {
+                match tile {
                     Tile::Start => print!("S"),
                     Tile::End => print!("E"),
-                    Tile::FLoor => print!(
-                        "{}",
-                        self.get_cost((x as u16, y as u16))
-                            .to_string()
-                            .chars()
-                            .last()
-                            .unwrap_or('.')
-                    ),
+                    Tile::FLoor => {
+                        if visited.contains(&(x as u16, y as u16)) {
+                            print!("O");
+                        } else {
+                            print!(".")
+                        }
+                    }
                     Tile::Wall => print!("#"),
                 }
             }
@@ -211,7 +294,7 @@ fn solve(input: &str) -> Cost {
     let map = Map::from_string(input);
     //map.print();
 
-    let score: Cost = map.get_end_cost();
+    let score: Cost = map.tiles_to_goal();
 
     score
 }
