@@ -1,6 +1,8 @@
 // cargo run  --bin day19_part1
 // cargo test --bin day19_part1
 
+use std::collections::HashMap;
+
 use advent_of_code::parsing;
 
 fn main() {
@@ -17,26 +19,40 @@ fn parse_input(input: &str) -> (Vec<&str>, Vec<&str>) {
     (towels, designs)
 }
 
-fn solvable(towels: &Vec<&str>, design: &str) -> bool {
+fn solvable<'a>(
+    memoize: &mut HashMap<&'a str, bool>,
+    towels: &Vec<&'a str>,
+    design: &'a str,
+) -> bool {
     if design.is_empty() {
         return true;
     }
 
-    towels.iter().any(|towel| {
+    if let Some(result) = memoize.get(design) {
+        return *result;
+    }
+
+    let result = towels.iter().any(|towel| {
         if let Some((remaining, _)) = parsing::string(towel)(design) {
-            solvable(towels, remaining)
+            solvable(memoize, towels, remaining)
         } else {
             false
         }
-    })
+    });
+
+    memoize.insert(design, result);
+
+    result
 }
 
 fn solve(input: &str) -> usize {
     let (towels, designs) = parse_input(input);
 
+    let mut memoize: HashMap<&str, bool> = HashMap::new();
+
     let total: usize = designs
         .iter()
-        .filter(|design| solvable(&towels, design))
+        .filter(|design| solvable(&mut memoize, &towels, design))
         .count();
 
     /*
