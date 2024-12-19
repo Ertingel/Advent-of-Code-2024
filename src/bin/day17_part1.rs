@@ -221,7 +221,7 @@ impl fmt::Display for Instruction {
             Instruction::Bxc => write!(f, "BXC"),
             Instruction::Out => write!(f, "OUT"),
             Instruction::Bdv => write!(f, "BDV"),
-            Instruction::Cdv => write!(f, "CVD"),
+            Instruction::Cdv => write!(f, "CDV"),
         }
     }
 }
@@ -282,7 +282,21 @@ impl Cpu {
         let instruction = Instruction::from_byte(*self.get_byte(0)?);
         let operand = Operand::from_byte(*self.get_byte(1)?);
 
-        //println!("{} {} {}", self.ins_pointer, instruction, operand,);
+        /* println!(
+            "{} {} {}({})   a:{} b:{} c:{}",
+            self.ins_pointer,
+            instruction,
+            operand,
+            *self.get_byte(1)?,
+            self.reg_a,
+            self.reg_b,
+            self.reg_c
+        ); */
+
+        /* println!(
+            "{} {}   a:{} b:{} c:{}",
+            instruction, operand, self.reg_a, self.reg_b, self.reg_c
+        ); */
 
         instruction.execute(self, operand);
 

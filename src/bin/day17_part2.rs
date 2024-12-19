@@ -11,8 +11,9 @@ fn main() {
     println!("Day17 part2: {output}");
 }
 
-type Value = u32;
+type Value = u64;
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum Operand {
     /**Combo operands 0 represent literal values 0.*/
@@ -35,6 +36,7 @@ enum Operand {
     Reserved,
 }
 
+#[allow(dead_code)]
 impl Operand {
     fn from_byte(byte: u8) -> Self {
         match byte {
@@ -85,6 +87,7 @@ impl fmt::Display for Operand {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum Instruction {
     /**
@@ -140,6 +143,7 @@ enum Instruction {
     Cdv,
 }
 
+#[allow(dead_code)]
 impl Instruction {
     fn from_byte(byte: u8) -> Self {
         match byte {
@@ -190,6 +194,12 @@ impl Instruction {
             Instruction::Out => {
                 // cpu.output.push((operand.value(cpu) % 8) as u8);
                 cpu.output.push((operand.value(cpu) & 0b_111) as u8);
+
+                /* if cpu.output.len() > cpu.program.len()
+                    || cpu.output != cpu.program[..cpu.output.len()]
+                {
+                    cpu.ins_pointer = cpu.program.len();
+                } */
             }
 
             Instruction::Bdv => {
@@ -211,6 +221,42 @@ impl Instruction {
     }
 }
 
+/*
+2 BXL 3(3)
+4 CDV B(5)
+6 ADV 3(3)
+8 BXL A(4)
+10 BXC Reserved(7)
+12 OUT B(5)
+14 JNZ 0(0)
+*/
+fn input_program(a: u64) -> Vec<u8> {
+    let mut a = a;
+    let mut c = 0;
+    let mut out: Vec<u8> = Vec::new();
+
+    while a != 0 {
+        let mut b = a & 0b_111; // 0 BST A(4)
+        println!("BST A   a:{} b:{} c:{}", a, b, c);
+        b ^= 3; // 2 BXL 3(3)
+        println!("BXL 3   a:{} b:{} c:{}", a, b, c);
+        c = a >> b; // 4 CDV B(5)
+        println!("CDV B   a:{} b:{} c:{}", a, b, c);
+        a >>= 3; // 6 ADV 3(3)
+        println!("ADV 3   a:{} b:{} c:{}", a, b, c);
+        b ^= 4; // 8 BXL A(4)
+        println!("BXL A   a:{} b:{} c:{}", a, b, c);
+        b ^= c; // 10 BXC Reserved(7)
+        println!("BXC Reserved   a:{} b:{} c:{}", a, b, c);
+        out.push(b as u8 & 0b_111); // 12 OUT B(5)
+        println!("OUT B   a:{} b:{} c:{}", a, b, c);
+        // 14 JNZ 0(0)
+        println!("JNZ 0   a:{} b:{} c:{}", a, b, c);
+    }
+
+    out
+}
+
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -221,7 +267,7 @@ impl fmt::Display for Instruction {
             Instruction::Bxc => write!(f, "BXC"),
             Instruction::Out => write!(f, "OUT"),
             Instruction::Bdv => write!(f, "BDV"),
-            Instruction::Cdv => write!(f, "CVD"),
+            Instruction::Cdv => write!(f, "CDV"),
         }
     }
 }
@@ -249,6 +295,7 @@ struct Cpu {
     output: Vec<u8>,
 }
 
+#[allow(dead_code)]
 impl Cpu {
     fn from_string(data: &str) -> Option<Self> {
         let (data, _) = parsing::string("Register A: ")(data)?;
@@ -282,7 +329,21 @@ impl Cpu {
         let instruction = Instruction::from_byte(*self.get_byte(0)?);
         let operand = Operand::from_byte(*self.get_byte(1)?);
 
-        //println!("{} {} {}", self.ins_pointer, instruction, operand,);
+        println!(
+            "{} {} {}({})   a:{} b:{} c:{}",
+            self.ins_pointer,
+            instruction,
+            operand,
+            *self.get_byte(1)?,
+            self.reg_a,
+            self.reg_b,
+            self.reg_c
+        );
+
+        /* println!(
+            "{} {}   a:{} b:{} c:{}",
+            instruction, operand, self.reg_a, self.reg_b, self.reg_c
+        ); */
 
         instruction.execute(self, operand);
 
@@ -303,16 +364,36 @@ impl Cpu {
 }
 
 fn solve(input: &str) -> Value {
+    //input_program(50230824);
+
     let original = Cpu::from_string(input).unwrap();
 
-    for i in 0..1000000 {
+    let seach_space: Value = 4294967295;
+
+    for i in 1..seach_space {
         let mut copy = original.clone();
         copy.reg_a = i;
 
+        println!("\nOriginal:");
         copy.run();
+        let out = copy.output;
 
-        if copy.output == copy.program {
+        println!("\nOptimixed:");
+        let out2 = input_program(i);
+
+        println!("{i}");
+        assert_eq!(out, out2);
+
+        if out == original.program {
             return i;
+        }
+
+        if i % 10_000_000 == 0 {
+            println!(
+                "Day17 part2: Seaching {} {:.1}%",
+                i,
+                i as f32 / seach_space as f32 * 100.0
+            )
         }
     }
 
