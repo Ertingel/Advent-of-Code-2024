@@ -111,6 +111,19 @@ fn print_grid(
     }
 }
  */
+
+fn test(falling: &HashMap<(i8, i8), u32>, space: usize, fallen: u32) -> bool {
+    let mut distance_field = Grid::new(space + 1, space + 1, u32::MAX);
+
+    fill_distance(&mut distance_field, falling, fallen, 0, 0, 0);
+
+    let steps: u32 = *distance_field
+        .get(distance_field.width() - 1, distance_field.height() - 1)
+        .unwrap();
+
+    steps != u32::MAX
+}
+
 fn solve(input: &str, space: usize) -> String {
     let falling: HashMap<(i8, i8), u32> = input
         .lines()
@@ -124,28 +137,27 @@ fn solve(input: &str, space: usize) -> String {
         })
         .collect();
 
-    for i in 2..falling.len() as u32 {
-        let mut distance_field = Grid::new(space + 1, space + 1, u32::MAX);
+    let mut tested = falling.len() as u32 / 2;
+    let mut step_size = tested / 2;
 
-        fill_distance(&mut distance_field, &falling, i, 0, 0, 0);
-
-        let steps: u32 = *distance_field
-            .get(distance_field.width() - 1, distance_field.height() - 1)
-            .unwrap();
-
-        if steps == u32::MAX {
-            let (x, y) = falling
-                .iter()
-                .find_map(|(key, &val)| if val == i - 1 { Some(key) } else { None })
-                .unwrap();
-
-            return x.to_string() + "," + &y.to_string();
+    while step_size > 1 {
+        if test(&falling, space, tested) {
+            tested += step_size;
+        } else {
+            tested -= step_size;
         }
+
+        step_size /= 2;
     }
 
     //print_grid(&distance_field, &falling, fallen, space);
 
-    "".to_owned()
+    let (x, y) = falling
+        .iter()
+        .find_map(|(key, &val)| if val == tested - 1 { Some(key) } else { None })
+        .unwrap();
+
+    x.to_string() + "," + &y.to_string()
 }
 
 #[cfg(test)]
