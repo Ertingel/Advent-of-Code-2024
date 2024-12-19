@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 fn main() {
     let input = include_str!("../././input/day18.txt");
-    let output = solve(input, 70, 1024);
+    let output = solve(input, 70);
     println!("Day18 part2: {output}");
 }
 
@@ -111,7 +111,7 @@ fn print_grid(
     }
 }
  */
-fn solve(input: &str, space: usize, fallen: u32) -> String {
+fn solve(input: &str, space: usize) -> String {
     let falling: HashMap<(i8, i8), u32> = input
         .lines()
         .enumerate()
@@ -124,13 +124,24 @@ fn solve(input: &str, space: usize, fallen: u32) -> String {
         })
         .collect();
 
-    let mut distance_field = Grid::new(space + 1, space + 1, u32::MAX);
+    for i in 2..falling.len() as u32 {
+        let mut distance_field = Grid::new(space + 1, space + 1, u32::MAX);
 
-    fill_distance(&mut distance_field, &falling, fallen, 0, 0, 0);
+        fill_distance(&mut distance_field, &falling, i, 0, 0, 0);
 
-    let steps: u32 = *distance_field
-        .get(distance_field.width() - 1, distance_field.height() - 1)
-        .unwrap();
+        let steps: u32 = *distance_field
+            .get(distance_field.width() - 1, distance_field.height() - 1)
+            .unwrap();
+
+        if steps == u32::MAX {
+            let (x, y) = falling
+                .iter()
+                .find_map(|(key, &val)| if val == i - 1 { Some(key) } else { None })
+                .unwrap();
+
+            return x.to_string() + "," + &y.to_string();
+        }
+    }
 
     //print_grid(&distance_field, &falling, fallen, space);
 
@@ -168,7 +179,7 @@ mod tests {
 0,5
 1,6
 2,0";
-        let output = solve(input, 6, 12);
+        let output = solve(input, 6);
         assert_eq!(output, "6,1")
     }
 }
