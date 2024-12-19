@@ -20,10 +20,10 @@ fn parse_input(input: &str) -> (Vec<&str>, Vec<&str>) {
 }
 
 fn solvable<'a>(
-    memoize: &mut HashMap<&'a str, u32>,
+    memoize: &mut HashMap<&'a str, u64>,
     towels: &Vec<&'a str>,
     design: &'a str,
-) -> u32 {
+) -> u64 {
     if design.is_empty() {
         return 1;
     }
@@ -48,12 +48,12 @@ fn solvable<'a>(
     result
 }
 
-fn solve(input: &str) -> u32 {
+fn solve(input: &str) -> u64 {
     let (towels, designs) = parse_input(input);
 
-    let mut memoize: HashMap<&str, u32> = HashMap::new();
+    let mut memoize: HashMap<&str, u64> = HashMap::new();
 
-    let total: u32 = designs
+    let total: u64 = designs
         .iter()
         .map(|design| solvable(&mut memoize, &towels, design))
         .sum();
