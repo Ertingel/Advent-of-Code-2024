@@ -1,14 +1,43 @@
 // cargo run  --bin day19_part1
 // cargo test --bin day19_part1
 
+use advent_of_code::parsing;
+
 fn main() {
     let input = include_str!("../././input/day19.txt");
     let output = solve(input);
     println!("Day19 part1: {output}");
 }
 
+fn parse_input(input: &str) -> (Vec<&str>, Vec<&str>) {
+    let (towels, designs) = input.split_once("\n\n").unwrap();
+    let towels: Vec<&str> = towels.split(", ").collect();
+    let designs: Vec<&str> = designs.lines().collect();
+
+    (towels, designs)
+}
+
+fn solvable(towels: &Vec<&str>, design: &str) -> bool {
+    if design.is_empty() {
+        return true;
+    }
+
+    towels.iter().any(|towel| {
+        if let Some((remaining, _)) = parsing::string(towel)(design) {
+            solvable(towels, remaining)
+        } else {
+            false
+        }
+    })
+}
+
 fn solve(input: &str) -> usize {
-    let total: usize = 0;
+    let (towels, designs) = parse_input(input);
+
+    let total: usize = designs
+        .iter()
+        .filter(|design| solvable(&towels, design))
+        .count();
 
     /*
     brwrr can be made with a br towel, then a wr towel, and then finally an r towel.
