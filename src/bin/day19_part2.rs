@@ -20,51 +20,43 @@ fn parse_input(input: &str) -> (Vec<&str>, Vec<&str>) {
 }
 
 fn solvable<'a>(
-    memoize: &mut HashMap<&'a str, bool>,
+    memoize: &mut HashMap<&'a str, u32>,
     towels: &Vec<&'a str>,
     design: &'a str,
-) -> bool {
+) -> u32 {
     if design.is_empty() {
-        return true;
+        return 1;
     }
 
     if let Some(result) = memoize.get(design) {
         return *result;
     }
 
-    let result = towels.iter().any(|towel| {
-        if let Some((remaining, _)) = parsing::string(towel)(design) {
-            solvable(memoize, towels, remaining)
-        } else {
-            false
-        }
-    });
+    let result = towels
+        .iter()
+        .map(|towel| {
+            if let Some((remaining, _)) = parsing::string(towel)(design) {
+                solvable(memoize, towels, remaining)
+            } else {
+                0
+            }
+        })
+        .sum();
 
     memoize.insert(design, result);
 
     result
 }
 
-fn solve(input: &str) -> usize {
+fn solve(input: &str) -> u32 {
     let (towels, designs) = parse_input(input);
 
-    let mut memoize: HashMap<&str, bool> = HashMap::new();
+    let mut memoize: HashMap<&str, u32> = HashMap::new();
 
-    let total: usize = designs
+    let total: u32 = designs
         .iter()
-        .filter(|design| solvable(&mut memoize, &towels, design))
-        .count();
-
-    /*
-    brwrr can be made with a br towel, then a wr towel, and then finally an r towel.
-    bggr can be made with a b towel, two g towels, and then an r towel.
-    gbbr can be made with a gb towel and then a br towel.
-    rrbgbr can be made with r, rb, g, and br.
-    ubwu is impossible.
-    bwurrg can be made with bwu, r, r, and g.
-    brgr can be made with br, g, and r.
-    bbrgwb is impossible.
-    */
+        .map(|design| solvable(&mut memoize, &towels, design))
+        .sum();
 
     total
 }
