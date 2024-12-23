@@ -1,7 +1,7 @@
 // cargo test --lib grid
 // cargo test --lib grid -- --nocapture
 
-use std::{fmt, usize};
+use std::fmt;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Grid<T> {
