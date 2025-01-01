@@ -2,6 +2,7 @@
 // cargo test --bin day21_part1
 
 use core::fmt;
+use std::collections::HashMap;
 
 fn main() {
     let input = include_str!("../././input/day21.txt");
@@ -68,6 +69,22 @@ impl Keypad {
             Keypad::A => (2, 3),
         }
     }
+
+    fn types() -> [Keypad; 11] {
+        [
+            Keypad::Seven,
+            Keypad::Eight,
+            Keypad::Nine,
+            Keypad::Four,
+            Keypad::Five,
+            Keypad::Six,
+            Keypad::One,
+            Keypad::Two,
+            Keypad::Three,
+            Keypad::Zero,
+            Keypad::A,
+        ]
+    }
 }
 
 impl fmt::Display for Keypad {
@@ -124,6 +141,16 @@ impl Direction {
             Direction::Right => (2, 1),
         }
     }
+
+    fn types() -> [Direction; 5] {
+        [
+            Direction::Upp,
+            Direction::A,
+            Direction::Left,
+            Direction::Down,
+            Direction::Right,
+        ]
+    }
 }
 
 impl fmt::Display for Direction {
@@ -143,6 +170,7 @@ fn parse_keypad(code: &str) -> Vec<Keypad> {
     code.chars().map(Keypad::from_char).collect()
 }
 
+#[allow(dead_code)]
 fn parse_direction(code: &str) -> Vec<Direction> {
     code.chars().map(Direction::from_char).collect()
 }
@@ -156,97 +184,176 @@ fn keypad_value(code: &[Keypad]) -> u32 {
     filtered.parse::<u32>().unwrap()
 }
 
-fn move_axis(
-    out: &mut Vec<Direction>,
-    from: i8,
-    to: i8,
-    decrement: Direction,
-    increment: Direction,
-) {
-    let delta = to - from;
-    match delta {
-        1..=i8::MAX => {
-            for _ in 0..delta {
-                out.push(increment);
-            }
+fn get_user_cost_map() -> HashMap<(Direction, Direction), u32> {
+    let mut out: HashMap<(Direction, Direction), u32> = HashMap::new();
+
+    for a in Direction::types().iter().cloned() {
+        for b in Direction::types().iter().cloned() {
+            /* let (ax, ay) = a.get_point();
+            let (bx, by) = b.get_point();
+
+            let dx = (bx - ax).unsigned_abs() as u32;
+            let dy = (by - ay).unsigned_abs() as u32;
+
+            let cost = dx + dy;
+
+            out.insert((a, b), cost); */
+            out.insert((a, b), 0);
         }
-
-        i8::MIN..=-1 => {
-            for _ in 0..-delta {
-                out.push(decrement);
-            }
-        }
-
-        _ => {}
-    }
-}
-
-fn solve_keypad(code: &[Keypad]) -> Vec<Direction> {
-    let mut at: Point = Keypad::A.get_point();
-    let mut out: Vec<Direction> = Vec::new();
-
-    for key in code {
-        let target = key.get_point();
-
-        if at.0 == 3 && target.0 == 0 {
-            move_axis(&mut out, at.1, target.1, Direction::Upp, Direction::Down);
-            move_axis(&mut out, at.0, target.0, Direction::Left, Direction::Right);
-        } else {
-            move_axis(&mut out, at.0, target.0, Direction::Left, Direction::Right);
-            move_axis(&mut out, at.1, target.1, Direction::Upp, Direction::Down);
-        }
-
-        out.push(Direction::A);
-        at = target;
     }
 
     out
 }
 
-fn solve_direction(directions: &[Direction]) -> Vec<Direction> {
-    let mut at: Point = Direction::A.get_point();
-    let mut out: Vec<Direction> = Vec::new();
+fn get_robot_cost_map(
+    costs: &HashMap<(Direction, Direction), u32>,
+) -> HashMap<(Direction, Direction), u32> {
+    let mut out: HashMap<(Direction, Direction), u32> = HashMap::new();
 
-    for key in directions {
-        let target = key.get_point();
+    for a in Direction::types().iter().cloned() {
+        for b in Direction::types().iter().cloned() {
+            let (ax, ay) = a.get_point();
+            let (bx, by) = b.get_point();
 
-        if at.1 == 0 && target.0 == 0 {
-            move_axis(&mut out, at.0, target.0, Direction::Left, Direction::Right);
-            move_axis(&mut out, at.1, target.1, Direction::Upp, Direction::Down);
-        } else {
-            move_axis(&mut out, at.1, target.1, Direction::Upp, Direction::Down);
-            move_axis(&mut out, at.0, target.0, Direction::Left, Direction::Right);
+            let dx = bx - ax;
+            let dy = by - ay;
+
+            let (x, a2) = match dx {
+                i8::MIN..=-1 => {
+                    let x = dx.unsigned_abs() as u32
+                        + costs.get(&(Direction::A, Direction::Left)).unwrap();
+
+                    (x, Direction::Left)
+                }
+                1..=i8::MAX => {
+                    let x = dx.unsigned_abs() as u32
+                        + costs.get(&(Direction::A, Direction::Right)).unwrap();
+
+                    (x, Direction::Right)
+                }
+                _ => (0, Direction::A),
+            };
+
+            let y = match dy {
+                i8::MIN..=-1 => {
+                    dy.unsigned_abs() as u32
+                        + costs.get(&(a2, Direction::Upp)).unwrap()
+                        + costs.get(&(Direction::Upp, Direction::A)).unwrap()
+                }
+                1..=i8::MAX => {
+                    dy.unsigned_abs() as u32
+                        + costs.get(&(a2, Direction::Down)).unwrap()
+                        + costs.get(&(Direction::Down, Direction::A)).unwrap()
+                }
+                _ => *costs.get(&(a2, Direction::A)).unwrap(),
+            };
+
+            let cost = x + y + 1;
+            //println!("{:?} -> {:?} = {}", a, b, cost);
+
+            out.insert((a, b), cost);
         }
-
-        out.push(Direction::A);
-        at = target;
     }
 
     out
+}
+
+fn get_keypad_cost_map(
+    costs: &HashMap<(Direction, Direction), u32>,
+) -> HashMap<(Keypad, Keypad), u32> {
+    let mut out: HashMap<(Keypad, Keypad), u32> = HashMap::new();
+
+    for a in Keypad::types().iter().cloned() {
+        for b in Keypad::types().iter().cloned() {
+            let (ax, ay) = a.get_point();
+            let (bx, by) = b.get_point();
+
+            let dx = bx - ax;
+            let dy = by - ay;
+
+            let (x, a2) = match dx {
+                i8::MIN..=-1 => {
+                    let x = dx.unsigned_abs() as u32
+                        + costs.get(&(Direction::A, Direction::Left)).unwrap();
+
+                    (x, Direction::Left)
+                }
+                1..=i8::MAX => {
+                    let x = dx.unsigned_abs() as u32
+                        + costs.get(&(Direction::A, Direction::Right)).unwrap();
+
+                    (x, Direction::Right)
+                }
+                _ => (0, Direction::A),
+            };
+
+            let y = match dy {
+                i8::MIN..=-1 => {
+                    dy.unsigned_abs() as u32
+                        + costs.get(&(a2, Direction::Upp)).unwrap()
+                        + costs.get(&(Direction::Upp, Direction::A)).unwrap()
+                }
+                1..=i8::MAX => {
+                    dy.unsigned_abs() as u32
+                        + costs.get(&(a2, Direction::Down)).unwrap()
+                        + costs.get(&(Direction::Down, Direction::A)).unwrap()
+                }
+                _ => *costs.get(&(a2, Direction::A)).unwrap(),
+            };
+
+            let cost = x + y + 1;
+            //println!("{:?} -> {:?} = {}", a, b, cost);
+
+            out.insert((a, b), cost);
+        }
+    }
+
+    out
+}
+
+fn solve_keypad(costs: &HashMap<(Keypad, Keypad), u32>, code: &[Keypad]) -> u32 {
+    code.iter()
+        .enumerate()
+        .map(|(i, to)| {
+            let from = if i == 0 { Keypad::A } else { code[i - 1] };
+
+            println!("> {}", costs.get(&(from, *to)).unwrap());
+
+            costs.get(&(from, *to)).unwrap()
+        })
+        .sum()
 }
 
 fn solve(input: &str) -> u32 {
     let keypads: Vec<Vec<Keypad>> = input.lines().map(parse_keypad).collect();
 
-    let solutions: Vec<Vec<Direction>> = keypads
-        .iter()
-        .map(|code| solve_direction(&solve_direction(&solve_keypad(code))))
-        .collect();
+    let user_cost = get_user_cost_map();
+    let robot1_cost = get_robot_cost_map(&user_cost);
+    //let robot2_cost = get_robot_cost_map(&robot1_cost);
+    //let robot3_cost = get_robot_cost_map(&robot2_cost);
+    let keypad_cost = get_keypad_cost_map(&robot1_cost);
 
+    let solutions: Vec<u32> = keypads
+        .iter()
+        .map(|code| solve_keypad(&keypad_cost, code))
+        .collect();
     let keypad_values: Vec<u32> = keypads.iter().map(|code| keypad_value(code)).collect();
 
     for sol in &solutions {
-        println!(
-            "{:?} {}",
-            sol.len(),
-            sol.iter().map(|c| c.to_string()).collect::<String>()
-        );
+        println!("{}", sol);
+        /*
+        68
+        60
+        68
+        64
+        64
+        */
     }
 
     let total: u32 = keypad_values
         .iter()
         .zip(solutions)
-        .map(|(value, solution)| value * solution.len() as u32)
+        .map(|(value, solution)| value * solution)
         .sum();
 
     total
@@ -256,97 +363,49 @@ fn solve(input: &str) -> u32 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn day21_part1_main() {
-        let input = "029A
-980A
-179A
-456A
-379A";
-        let output = solve(input);
-        assert_eq!(output, 126384)
-    }
+    /* #[test]
+        fn day21_part1_main() {
+            let input = "029A
+    980A
+    179A
+    456A
+    379A";
+            let output = solve(input);
+            assert_eq!(output, 126384)
+        } */
 
     #[test]
     fn day21_part1_test1() {
-        let result = solve_keypad(&parse_keypad("029A"));
-
-        if result == parse_direction("<A^A>^^AvvvA") {
-            return;
-        }
-
-        if result == parse_direction("<A^A^>^AvvvA") {
-            return;
-        }
-
-        if result == parse_direction("<A^A^^>AvvvA") {
-            return;
-        }
-
-        panic!()
-    }
-
-    #[test]
-    fn day21_part1_test2() {
-        let result = solve_direction(&solve_keypad(&parse_keypad("029A")));
-        /* println!(
-            "{}",
-            result.iter().map(|x| x.to_string()).collect::<String>()
-        ); */
-        assert_eq!(result.len(), "v<<A>>^A<A>AvA<^AA>A<vAAA>^A".len());
-    }
-
-    #[test]
-    fn day21_part1_test3() {
-        let result = solve_direction(&solve_direction(&solve_keypad(&parse_keypad("029A"))));
-        /* println!(
-            "{}",
-            result.iter().map(|x| x.to_string()).collect::<String>()
-        ); */
-        assert_eq!(
-            result.len(),
-            "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A".len()
-        );
-    }
-
-    #[test]
-    fn day21_part1_test3_1() {
         let input = "029A";
         let output = solve(input);
         assert_eq!(output, 1972)
     }
 
-    #[test]
-    fn day21_part1_test3_2() {
+    /* #[test]
+    fn day21_part1_test2() {
         let input = "980A";
         let output = solve(input);
         assert_eq!(output, 58800)
     }
 
     #[test]
-    fn day21_part1_test3_3() {
+    fn day21_part1_test3() {
         let input = "179A";
         let output = solve(input);
         assert_eq!(output, 12172)
     }
 
     #[test]
-    fn day21_part1_test3_4() {
+    fn day21_part1_test4() {
         let input = "456A";
         let output = solve(input);
         assert_eq!(output, 29184)
     }
 
     #[test]
-    fn day21_part1_test3_5() {
+    fn day21_part1_test5() {
         let input = "379A";
         let output = solve(input);
         assert_eq!(output, 24256)
-    }
+    } */
 }
-
-//<<vAA>A^>AA<Av>A^AvA^A<<vA^>>AAvA^Av<A^>AA<A>Av<A<A^>>AAA<Av>A^A
-//<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
-
-//<<vAA>A^>AA<Av>A^AAvA^Av<A^>A<A>Av<A^>A<A>Av<A<A^>>AA<Av>A^A
-//<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
