@@ -93,10 +93,10 @@ fn solve(input: &str) -> usize {
         .flat_map(|(computer, connections2)| connected3(&connections, computer, connections2))
         .collect();
 
-    println!("{}", connected3.len());
+    /* println!("{}", connected3.len());
     for x in &connected3 {
         println!("{},{},{}", x[0], x[1], x[2]);
-    }
+    } */
 
     connected3.len()
 }
