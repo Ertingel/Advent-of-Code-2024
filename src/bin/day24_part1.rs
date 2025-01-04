@@ -1,16 +1,171 @@
 // cargo run  --bin day24_part1
 // cargo test --bin day24_part1
 
+use std::collections::HashMap;
+
 fn main() {
     let input = include_str!("../././input/day24.txt");
     let output = solve(input);
     println!("Day24 part1: {output}");
 }
 
-fn solve(input: &str) -> u32 {
-    let total: u32 = 0;
+type Link<'a> = &'a str;
 
-    total
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum GateType {
+    And,
+    Or,
+    Xor,
+}
+
+impl GateType {
+    fn from_str(input: &str) -> Self {
+        match input {
+            "AND" => GateType::And,
+            "OR" => GateType::Or,
+            "XOR" => GateType::Xor,
+            _ => panic!(),
+        }
+    }
+
+    fn execute(&self, x: bool, y: bool) -> bool {
+        match self {
+            GateType::And => x && y,
+            GateType::Or => x || y,
+            GateType::Xor => x ^ y,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+struct Gate<'a> {
+    gate_type: GateType,
+    x: Link<'a>,
+    y: Link<'a>,
+    out: Link<'a>,
+}
+
+impl<'a> Gate<'a> {
+    fn new(gate_type: GateType, x: Link<'a>, y: Link<'a>, out: Link<'a>) -> Self {
+        Gate {
+            gate_type,
+            x,
+            y,
+            out,
+        }
+    }
+
+    fn execute(&self, links: &mut HashMap<Link<'a>, Option<bool>>) -> Option<bool> {
+        let out = self
+            .gate_type
+            .execute((*links.get(self.x)?)?, (*links.get(self.y)?)?);
+
+        let out = Some(out);
+        links.insert(self.out, out);
+
+        out
+    }
+}
+
+fn parse_input(input: &str) -> (HashMap<Link, Option<bool>>, Vec<Gate>) {
+    let (initials, gates) = input.split_once("\n\n").unwrap();
+
+    let mut links: HashMap<Link, Option<bool>> = initials
+        .lines()
+        .map(|line| {
+            let (link, state) = line.split_once(": ").unwrap();
+
+            (link, Some(state == "1"))
+        })
+        .collect();
+
+    let gates: Vec<Gate> = gates
+        .lines()
+        .map(|line| {
+            let mut split = line.split(' ');
+
+            let x = split.next().unwrap();
+            let gate_type = GateType::from_str(split.next().unwrap());
+            let y = split.next().unwrap();
+            split.next().unwrap();
+            let out = split.next().unwrap();
+
+            if !links.contains_key(out) {
+                links.insert(out, None);
+            }
+
+            Gate::new(gate_type, x, y, out)
+        })
+        .collect();
+
+    (links, gates)
+}
+
+fn execute<'a>(
+    links: &HashMap<Link<'a>, Option<bool>>,
+    gates: &[Gate<'a>],
+) -> HashMap<Link<'a>, Option<bool>> {
+    let mut links = links.clone();
+
+    let mut updating = true;
+
+    while updating {
+        updating = false;
+
+        for gate in gates {
+            let old_state = *links.get(gate.out).unwrap();
+            if old_state != gate.execute(&mut links) {
+                updating = true;
+            }
+        }
+    }
+
+    links
+}
+
+fn get_z_value(links: &HashMap<Link, Option<bool>>) -> u64 {
+    //println!("{:?}", links);
+    //print_links(links);
+
+    let mut list: Vec<(u16, bool)> = links
+        .iter()
+        .filter(|(name, value)| name.starts_with('z') && value.is_some())
+        .map(|(name, value)| (name[1..].parse::<u16>().unwrap(), value.unwrap()))
+        .collect();
+
+    list.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+    //println!("{:?}", list);
+
+    list.iter()
+        .map(|(name, value)| (*value as u64) << name)
+        .reduce(|a, b| a | b)
+        .unwrap()
+}
+
+/* fn print_links(links: &HashMap<Link, Option<bool>>) {
+    let mut links: Vec<(Link, Option<bool>)> = links.iter().map(|(k, v)| (*k, *v)).collect();
+    links.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+    for (name, value) in links {
+        if let Some(value) = value {
+            if value {
+                println!("{}: 1", name);
+            } else {
+                println!("{}: 0", name);
+            }
+        } else {
+            println!("{}: _", name);
+        }
+    }
+} */
+
+fn solve(input: &str) -> u64 {
+    let (links, gates) = parse_input(input);
+    let result = execute(&links, &gates);
+    let z: u64 = get_z_value(&result);
+
+    z
 }
 
 #[cfg(test)]
