@@ -37,43 +37,54 @@ fn parse_input(input: &str) -> HashMap<Computer, Vec<Computer>> {
     out
 }
 
-fn filter_connections3<'a>(
-    connections: &'a HashMap<Computer, Vec<Computer>>,
-    list: &[Computer<'a>],
-) -> Vec<Computer<'a>> {
-    list.iter()
-        .cloned()
-        .filter(|con1| {
-            connections
-                .get(con1)
-                .unwrap()
-                .iter()
-                .any(|con2| list.contains(con2))
-        })
-        .collect()
-}
+fn combinate<'a>(
+    selection: &HashSet<Computer<'a>>,
+    connections: &[(Computer<'a>, HashSet<Computer<'a>>)],
+) -> HashSet<Computer<'a>> {
+    let mut largest = selection.clone();
 
-fn connected3<'a>(
-    connections: &'a HashMap<Computer, Vec<Computer>>,
-    computer: &'a Computer,
-    connections2: &[Computer<'a>],
-) -> HashSet<[Computer<'a>; 3]> {
-    let mut out: HashSet<[Computer<'a>; 3]> = HashSet::new();
+    for (i, (com, con)) in connections.iter().enumerate() {
+        if selection.contains(com) || !con.is_superset(selection) {
+            continue;
+        }
 
-    for (i, com2) in connections2.iter().enumerate() {
-        for com3 in connections2.iter().skip(i + 1) {
-            if !connections.get(com2).unwrap().contains(com3) {
-                continue;
-            }
+        let mut selection2 = selection.clone();
+        selection2.insert(com);
 
-            let mut list = [computer, *com2, *com3];
-            list.sort_unstable();
+        let res = combinate(&selection2, &connections[i + 1..]);
 
-            out.insert(list);
+        if res.len() > largest.len() {
+            largest = res;
         }
     }
 
-    out
+    largest
+}
+
+fn filter_connections<'a>(
+    connections: &'a HashMap<Computer, Vec<Computer>>,
+    list: &[Computer<'a>],
+) -> Vec<Computer<'a>> {
+    let set1: HashSet<Computer> = list.iter().cloned().collect();
+
+    let sets: Vec<(Computer, HashSet<Computer>)> = list
+        .iter()
+        .map(|con| {
+            let mut cons = connections
+                .get(con)
+                .unwrap()
+                .iter()
+                .filter(|e| set1.contains(*e))
+                .cloned()
+                .collect::<HashSet<Computer>>();
+            cons.insert(con);
+
+            (*con, cons)
+        })
+        .filter(|(_, cons)| !cons.is_empty())
+        .collect();
+
+    combinate(&HashSet::new(), &sets).iter().cloned().collect()
 }
 
 fn solve(input: &str) -> String {
@@ -81,24 +92,26 @@ fn solve(input: &str) -> String {
 
     let filtered: HashMap<Computer, Vec<Computer>> = connections
         .iter()
-        .filter(|(computer, connections2)| computer.starts_with('t') && connections2.len() >= 2)
-        .map(|(computer, connections2)| {
-            (*computer, filter_connections3(&connections, connections2))
-        })
-        .filter(|(_, connections2)| connections2.len() >= 2)
+        .filter(|(computer, _)| computer.starts_with('t'))
+        .map(|(computer, connections2)| (*computer, filter_connections(&connections, connections2)))
         .collect();
 
-    let connected3: HashSet<[Computer; 3]> = filtered
+    let longest = filtered
+        .values()
+        .map(|connections2| connections2.len())
+        .max()
+        .unwrap();
+
+    let (computer, connections2) = filtered
         .iter()
-        .flat_map(|(computer, connections2)| connected3(&connections, computer, connections2))
-        .collect();
+        .find(|(_, connections2)| connections2.len() == longest)
+        .unwrap();
 
-    /* println!("{}", connected3.len());
-    for x in &connected3 {
-        println!("{},{},{}", x[0], x[1], x[2]);
-    } */
+    let mut out = connections2.clone();
+    out.push(computer);
+    out.sort_unstable();
 
-    "".to_owned()
+    out.join(",")
 }
 
 #[cfg(test)]
